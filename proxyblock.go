@@ -25,6 +25,7 @@ func main() {
     whitelistFilename := flag.String("wl", "whitelist.txt", "file of regexes to whitelist request urls (overrides blacklist)")
     blacklistFilename := flag.String("bl", "blacklist.txt", "file of regexes to blacklistlist request urls")
 
+    flag.Parse()
     whiteList, wlErr := getRegexlist(*whitelistFilename)
     if wlErr != nil {
         log.Fatalf("Could not load whitelist. Error: %s", wlErr)
@@ -33,7 +34,6 @@ func main() {
     if blErr != nil {
         log.Fatalf("Could not load blacklist. Error: %s", blErr)
     }
-    flag.Parse()
     proxyExceptionString := "LOL-WHUT-JUST-DOIT-DOOD"
     proxy := goproxy.NewProxyHttpServer()
     proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
