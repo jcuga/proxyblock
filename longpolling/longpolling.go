@@ -4,10 +4,8 @@ import (
     "container/list"
     "encoding/json"
     "fmt"
-    "html/template"
     "io"
     "log"
-    "math/rand"
     "net/http"
     "strconv"
     "time"
@@ -15,33 +13,7 @@ import (
     "github.com/nu7hatch/gouuid"
 )
 
-// Handler for the main page, which we wire up to the
-// route at "/" below in `main`.
-//
-func MainPageHandler(w http.ResponseWriter, r *http.Request) {
-    log.Println("Handling HTTP request at ", r.URL)
-    // Did you know Golang's ServeMux matches only the
-    // prefix of the request URL?  It's true.  Here we
-    // insist the path is just "/".
-    if r.URL.Path != "/" {
-        w.WriteHeader(http.StatusNotFound)
-        return
-    }
-    // Read in the template with our long polling JavaScript code.
-    t, err := template.ParseFiles("/vagrant/src/longpolling/templates/index.html")
-    if err != nil {
-        log.Fatal("WTF dude, error parsing your template.")
-
-    }
-    // Render the template, writing to `w`.
-    t.Execute(w, "")
-}
-
-func StartLongpollServer(port string) (chan Event) {
-    // When we get a request at "/", call `MainPageHandler`
-    // in a new goroutine.
-    http.Handle("/", http.HandlerFunc(MainPageHandler))
-
+func StartLongpollManager() (chan Event, func(w http.ResponseWriter, r *http.Request) ) {
     // TODO: make channel sizes a const or config
     clientRequestChan := make(chan ClientSubscription, 100)
     clientTimeoutChan := make(chan ClientSubPair, 100)
@@ -55,37 +27,12 @@ func StartLongpollServer(port string) (chan Event) {
         ClientSubChannels:   make(map[string]map[uuid.UUID]chan<- []Event),
         SubEventBuffer:      make(map[string]EventBuffer),
         Quit:                quit,
-        MaxEventBufferSize:  25,
+        MaxEventBufferSize:  25,  // TODO: up to much larger once other stuff working well
     }
 
     // Start subscription manager
     go subManager.Run()
-
-    // Start dummy event generator to test system
-    //go EmitDummyEvents(events)
-
-    // Attach long poll request handler:
-    http.Handle("/events", http.HandlerFunc(getLongPollSubscriptionHandler(clientRequestChan, clientTimeoutChan)))
-    // Start the server and listen forever on port 8000.
-    fmt.Println("Serving long poll server prototype...")
-    go http.ListenAndServe("127.0.0.1:" + port, nil)
-    return events
-}
-
-// TODO: remove once real events wired in
-func EmitDummyEvents(events chan<- Event) {
-    categories := []string{"apple", "banana", "pear", "orange"}
-    data := []string{"hi mom", "asdf123", "this is some data",
-        "datar pl33ze!!!", "0101010101000101110100101010100",
-        "Foobar widgets", "nuggets", "cows"}
-    // Send events with random category/data values
-    for {
-        select {
-        case <-time.After(100 * time.Millisecond):
-            event := Event{time.Now(), categories[rand.Intn(len(categories))], data[rand.Intn(len(data))]}
-            events <- event
-        }
-    }
+    return events, getLongPollSubscriptionHandler(clientRequestChan, clientTimeoutChan)
 }
 
 // TODO: put sub manager and related event code in its own file leaving only
@@ -340,11 +287,3 @@ func (eb *EventBuffer) GetEventsSince(since time.Time) ([]Event, error) {
     // newest first so handled with more priority?
     return events, nil
 }
-
-// Next steps:
-//  - create an example that uses sub manager and pumps fake data
-//  - set up javascript client
-//  - see if things work
-//  - if things work, cleanup and add websocket endpoint
-//  - add dummy program that pumps data to websocket endpoint
-//  - bonus points: add multiple WS endpoints

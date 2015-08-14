@@ -1,3 +1,7 @@
+# allow local traffic
+^http://127\.0\.0\.1.*
+^http://localhost.*
+
 # allow any domain.com|org or www.domain.com|org site
 ^http://(?:www\.)?[^.]+\.(com|org)/.*$
 
