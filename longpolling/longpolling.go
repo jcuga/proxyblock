@@ -27,7 +27,7 @@ func StartLongpollManager() (chan Event, func(w http.ResponseWriter, r *http.Req
         ClientSubChannels:   make(map[string]map[uuid.UUID]chan<- []Event),
         SubEventBuffer:      make(map[string]EventBuffer),
         Quit:                quit,
-        MaxEventBufferSize:  25,  // TODO: up to much larger once other stuff working well
+        MaxEventBufferSize:  1000,  // TODO: up to much larger once other stuff working well
     }
 
     // Start subscription manager

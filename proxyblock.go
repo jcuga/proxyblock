@@ -19,7 +19,7 @@ import (
 )
 
 var (
-    endBodyTagMatcher = regexp.MustCompile(`(?i:</body>)`)
+    startBodyTagMatcher = regexp.MustCompile(`(?i:<body .*>)`)
     controlPort = "8380"
     proxyExceptionString = "LOL-WHUT-JUST-DOIT-DOOD"
 )
@@ -42,19 +42,26 @@ func NewControlServer(port string, eventAjaxHandler func(w http.ResponseWriter, 
     return s
 }
 
+func stripProxyExceptionStringFromUrl(url string) string {
+    if (strings.HasSuffix(url, proxyExceptionString)) {
+        return url[:len(url) - len(proxyExceptionString)]
+    } else {
+        return url
+    }
+}
+
 func notifyEvent(action string, req *http.Request, events chan longpolling.Event) {
     var category string
     // TODO: comments about how longpoll subscriptions for a given referrer (or
     // url when not a referred page).  This way we can show all content allowed/blocked
     // for a given page.
     if referer := req.Header.Get("Referer") ; len(referer) > 0 {
-        category = referer
+        category = stripProxyExceptionStringFromUrl(referer)
     } else {
-        category = req.URL.String()
+        category = stripProxyExceptionStringFromUrl(req.URL.String())
     }
     event := longpolling.Event{time.Now(), category, action + ": " + req.URL.String()}
     events <- event
-
 }
 
 func main() {
@@ -152,17 +159,17 @@ func main() {
                 // never called?
                 return s;
             }
-            match := endBodyTagMatcher.FindIndex([]byte(s))
+            match := startBodyTagMatcher.FindIndex([]byte(s))
             if match != nil && len(match) == 2 {
                 // TODO: make this more efficient by using a stream or some sort
                 // of stringbuilder like thing that doesn't require mashing
                 // giant strings together.
-                return s[:match[0]] +
+                return s[:match[1]] +
                     "<iframe style=\"position:fixed; height: 240px; " +
                     "width: 400px; top: 4px; right: 20px; " +
                     "z-index: 99999999; background-color: #FFFFFF;\" " +
                     "src=\"http://127.0.0.1:" + controlPort + "/page-menu?page=" + ctx.Req.URL.String()  + "\"></iframe>" +
-                    s[match[0]:]
+                    s[match[1]:]
             } else {
                 log.Printf("No closing body tag found, must not be html, no injection.")
                 return s
@@ -220,12 +227,18 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
     </div>
     <script type="text/javascript">
 
-    var sinceTime = ISODateString(new Date());
+    // Start checking events from a few seconds ago in case our iframe didn't
+    // load right away due to other js on parent page being slow
+    var sinceTime = ISODateString( new Date(Date.now() - 10000) );
 
     (function poll() {
         var category = location.search;
+        var exceptionString = "%s";
         if (category.length > 6) {
             category = category.slice(6, category.length);
+        }
+        if (stringEndsWith(category, exceptionString)) {
+            category = category.slice(0, exceptionString.length);
         }
         $('#info').text(category);
         var timeout = 15;
@@ -241,7 +254,7 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
                     // Events are most recent first, so insertBefore from end of array
                     // to keep latest event on top
                     for (var i = data.events.length - 1; i >= 0 ; i--) {
-                        $(getFormattedEvent(data.events[i], receivedTime)).insertAfter("#stuff-happening");
+                        $("#stuff-happening").append(getFormattedEvent(data.events[i], receivedTime));
                         sinceTime = data.events[i].timestamp;
                     }
                 }
@@ -265,6 +278,10 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
         });
     })();
 
+
+    function stringEndsWith(str, suffix) {
+        return str.indexOf(suffix, str.length - suffix.length) !== -1;
+    }
     function getFormattedEvent(event) {
       return "<tr class='event-item'>" +
         "<td>" + event.data + "</td>" +
@@ -292,6 +309,6 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
     }
     </script>
 </body>
-</html>`, proxyExceptionString, controlPort)
+</html>`, proxyExceptionString, proxyExceptionString, controlPort)
 }
 
