@@ -2,6 +2,6 @@
 ^http://(?:www\.)?[^.]+\.(com|org)/.*$
 
 # allow any subdomain.domain.com url that is an image or stylesheet
-^http://[^.]+\.[^.]+\.(com|org)/.*\.jpg$
-^http://[^.]+\.[^.]+\.(com|org)/.*\.png$
-^http://[^.]+\.[^.]+\.(com|org)/.*\.css$
+^http://[^.]+\.[^.]+\.(com|org)/.*\.jpg[^\./]*$
+^http://[^.]+\.[^.]+\.(com|org)/.*\.png[^\./]*$
+^http://[^/]+\.(com|org)/.*\.css[^\./]*$
