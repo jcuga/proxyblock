@@ -42,6 +42,10 @@ func NewControlServer(port string, eventAjaxHandler func(w http.ResponseWriter, 
     return s
 }
 
+// Since our event subscriptions (longpoll) are based on a 'category' which is
+// the URL/referer, when we add a proxy exception string to manually bypass
+// content blocking, the string on the end of the URL will cause a mismatch and
+// we'll never get our content accepted/blocked notifications
 func stripProxyExceptionStringFromUrl(url string) string {
     if (strings.HasSuffix(url, proxyExceptionString)) {
         return url[:len(url) - len(proxyExceptionString)]
@@ -237,6 +241,8 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
         if (category.length > 6) {
             category = category.slice(6, category.length);
         }
+        // get rid of proxy exception string so we don't break our notification
+        // subscription category
         if (stringEndsWith(category, exceptionString)) {
             category = category.slice(0, exceptionString.length);
         }
