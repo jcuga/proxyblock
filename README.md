@@ -6,6 +6,7 @@ Websites should load much faster despite being run through a proxy since all the
 ## Running
 If you have a go workspace set up, simply build and run out of the box:
 ```
+go get ./...
 go build proxyblock.go
 ./proxyblock
 ```

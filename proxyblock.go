@@ -19,7 +19,7 @@ import (
 )
 
 var (
-    startBodyTagMatcher = regexp.MustCompile(`(?i:<body .*>)`)
+    startBodyTagMatcher = regexp.MustCompile(`(?i:<body.*>)`)
     controlPort = "8380"
     proxyExceptionString = "LOL-WHUT-JUST-DOIT-DOOD"
 )
@@ -164,7 +164,7 @@ func main() {
                 return s;
             }
             match := startBodyTagMatcher.FindIndex([]byte(s))
-            if match != nil && len(match) == 2 {
+            if match != nil && len(match) >= 2 {
                 // TODO: make this more efficient by using a stream or some sort
                 // of stringbuilder like thing that doesn't require mashing
                 // giant strings together.
@@ -175,7 +175,9 @@ func main() {
                     "src=\"http://127.0.0.1:" + controlPort + "/page-menu?page=" + ctx.Req.URL.String()  + "\"></iframe>" +
                     s[match[1]:]
             } else {
-                log.Printf("No closing body tag found, must not be html, no injection.")
+                // TODO: instead of fatal errors, make error page in browser
+                // and continue running proxy.
+                log.Fatalf("No starting body tag found, must not be html, no injection.")
                 return s
             }
         }))
