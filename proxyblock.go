@@ -169,15 +169,13 @@ func main() {
                 // of stringbuilder like thing that doesn't require mashing
                 // giant strings together.
                 return s[:match[1]] +
-                    "<iframe style=\"position:fixed; height: 240px; " +
-                    "width: 400px; top: 4px; right: 20px; " +
-                    "z-index: 99999999; background-color: #FFFFFF;\" " +
+                    "<div id=\"proxyblock-controls\" style=\"position: fixed; overflow: hidden; height: 120px; width: 400px !important; top: 4px; right: 20px; z-index: 99999999;\">" +
+                    "<iframe style=\"background-color: #FFFFFF; width: 100%; height: 100%; overflow: hidden;\" " +
                     "src=\"http://127.0.0.1:" + controlPort + "/page-menu?page=" + ctx.Req.URL.String()  + "\"></iframe>" +
+                    "</div>" +
                     s[match[1]:]
             } else {
-                // TODO: instead of fatal errors, make error page in browser
-                // and continue running proxy.
-                log.Fatalf("No starting body tag found, must not be html, no injection.")
+                log.Printf("WARNING: No starting body tag found, must not be html, no injection.")
                 return s
             }
         }))
@@ -221,7 +219,74 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
 <html>
 <head>
     <script src="http://code.jquery.com/jquery-1.11.3.min.js%s"></script>
+    <style>
+        body {
+            color: #000000;
+            background-color: #EEEEEE;
+        }
+        #control-wrapper {
+            display: block;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+        }
+        #page-controls {
+            display: block;
+            clear: both;
+            background-color: transparent;
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 0;
+            margin-bottom: 10px;
+            padding: 0;
+
+        }
+        .control-item {
+            display: inline-block;
+            padding: 4px 8px;
+            margin: 0;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .control-item:hover {
+            border: 2px solid black;
+        }
+
+        #stat-num-allow {
+            background-color: #77FF77;
+        }
+        #stat-num-block {
+            background-color: #FF7777;
+        }
+        #stat-num-manual {
+            background-color: #FFFF77;
+        }
+        #move-controls {
+            background-color: #BBBBBB;
+        }
+        #toggle-details {
+            background-color: #AABBFF;
+        }
+        #info {
+            font-size: 12px;
+            font-weight: normal;
+            color: #000000;
+            padding: 0;
+            margin: 0;
+        }
+    </style>
 </head><body>
+    <div id="control-wrapper">
+        <div id="page-controls">
+            <div id="stat-num-allow" class="control-item">0</div>
+            <div id="stat-num-block" class="control-item">0</div>
+            <div id="stat-num-manual" class="control-item">0</div>
+            <div id="move-controls" class="control-item">&lt;</div>
+            <div id="toggle-details" class="control-item">+</div>
+        </div>
+    </div>
     <h3 id="info"></h3>
     <table border=1>
       <tr>
@@ -236,6 +301,12 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
     // Start checking events from a few seconds ago in case our iframe didn't
     // load right away due to other js on parent page being slow
     var sinceTime = ISODateString( new Date(Date.now() - 10000) );
+
+    var stats = {
+        blocked: 0,
+        allowed: 0,
+        manual: 0
+    };
 
     (function poll() {
         var category = location.search;
@@ -262,6 +333,7 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
                     // Events are most recent first, so insertBefore from end of array
                     // to keep latest event on top
                     for (var i = data.events.length - 1; i >= 0 ; i--) {
+                        tally(data.events[i]);
                         $("#stuff-happening").append(getFormattedEvent(data.events[i], receivedTime));
                         sinceTime = data.events[i].timestamp;
                     }
@@ -289,12 +361,32 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
 
     function stringEndsWith(str, suffix) {
         return str.indexOf(suffix, str.length - suffix.length) !== -1;
-    }
+    };
+
     function getFormattedEvent(event) {
       return "<tr class='event-item'>" +
         "<td>" + event.data + "</td>" +
         "</tr>";
-    }
+    };
+
+    function tally(event) {
+        if (!event || !event.data) {
+            return;
+        }
+        if (event.data.slice(0,1) == 'A') {
+            stats.allowed += 1;
+            $('#stat-num-allow').html(stats.allowed);
+        } else if (event.data.slice(0,1) == 'B') {
+            stats.blocked += 1;
+            $('#stat-num-block').html(stats.blocked);
+        } else if (event.data.slice(0,1) == 'M') {
+            stats.manual += 1;
+            $('#stat-num-manual').html(stats.manual);
+        } else {
+            // else unknown event :(
+            return;
+        }
+    };
 
     function sleep(milliseconds) {
       var start = new Date().getTime();
@@ -303,7 +395,7 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
           break;
         }
       }
-    }
+    };
 
     /* use a function for the exact format desired... */
     function ISODateString(d){
@@ -314,7 +406,7 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
            + pad(d.getUTCHours())+':'
            + pad(d.getUTCMinutes())+':'
            + pad(d.getUTCSeconds())+'Z'
-    }
+    };
     </script>
 </body>
 </html>`, proxyExceptionString, proxyExceptionString, controlPort)
