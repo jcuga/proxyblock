@@ -171,7 +171,7 @@ func main() {
                 return s[:match[1]] +
                     getParentControlScript() +
                     "<div id=\"proxyblock-controls\" style=\"position: fixed; height: 42px; width: 222px !important; top: 4px; right: 8px; z-index: 99999999;\">" +
-                    "<iframe scrolling=\"no\" style=\"overflow: hidden; background-color: #FFFFFF; border: 2px solid black; width: 100%; height: 100%;\" " +
+                    "<iframe id=\"proxyblock-frame\" scrolling=\"no\" style=\"overflow: hidden; background-color: #FFFFFF; border: 2px solid black; width: 100%; height: 100%;\" " +
                     "src=\"http://127.0.0.1:" + controlPort + "/page-menu?page=" + ctx.Req.URL.String()  + "\"></iframe>" +
                     "</div>" +
                     s[match[1]:]
@@ -226,8 +226,27 @@ func getParentControlScript() string {
             if (e.origin.slice(0, 17) !== "http://127.0.0.1:" && e.origin.slice(0, 18) !== "https://127.0.0.1:") {
                 return;
             }
-            alert(e.origin);
-            alert(e.data);
+            var wrapper = document.getElementById("proxyblock-controls");
+            var frame = document.getElementById("proxyblock-frame");
+            if (e.data.upTop !== undefined) {
+                // user toggled control position.  reposition:
+                if (e.data.upTop) {
+                    wrapper.style.bottom = null;
+                    wrapper.style.top = "4px";
+
+                } else {
+                    wrapper.style.top = null;
+                    wrapper.style.bottom = "8px";
+                }
+            }
+            if (e.data.expanded !== undefined) {
+                // user toggled control exanded state.
+                if (e.data.expanded) {
+
+                } else {
+
+                }
+            }
         }, false);
     </script>
     `
@@ -332,6 +351,9 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
         expanded: false
     };
 
+    // for browsers that don't have console
+    if(typeof window.console == 'undefined') { window.console = {log: function (msg) {} }; }
+
     (function poll() {
         var category = location.search;
         var exceptionString = "%s";
@@ -351,7 +373,6 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
             optionalSince = "&since_time=" + sinceTime;
         }
         var pollUrl = "http://127.0.0.1:%s/events?timeout=" + timeout + "&category=" + category + optionalSince;
-        console.log(pollUrl);
         $.ajax({ url: pollUrl,
             success: function(data) {
                 var receivedTime = (new Date()).toISOString();
@@ -377,9 +398,7 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
                 }
             }, dataType: "json",
         error: function (data) {
-            console.log(data);
             console.log("Error in ajax request--trying again shortly...");
-            //sleep(3000);
         },
         complete: poll
         });
@@ -442,6 +461,11 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
 
     $("#move-controls").click(function(event) {
         controlState.upTop = !controlState.upTop;
+        if (controlState.upTop) {
+            $(this).html("&#x25BC");
+        } else {
+            $(this).html("&#x25B2");
+        }
         window.parent.postMessage({upTop: controlState.upTop}, "*");
     });
 
