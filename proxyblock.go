@@ -169,8 +169,9 @@ func main() {
                 // of stringbuilder like thing that doesn't require mashing
                 // giant strings together.
                 return s[:match[1]] +
-                    "<div id=\"proxyblock-controls\" style=\"position: fixed; overflow: hidden; height: 120px; width: 400px !important; top: 4px; right: 20px; z-index: 99999999;\">" +
-                    "<iframe style=\"background-color: #FFFFFF; width: 100%; height: 100%; overflow: hidden;\" " +
+                    getParentControlScript() +
+                    "<div id=\"proxyblock-controls\" style=\"position: fixed; height: 42px; width: 222px !important; top: 4px; right: 8px; z-index: 99999999;\">" +
+                    "<iframe scrolling=\"no\" style=\"overflow: hidden; background-color: #FFFFFF; border: 2px solid black; width: 100%; height: 100%;\" " +
                     "src=\"http://127.0.0.1:" + controlPort + "/page-menu?page=" + ctx.Req.URL.String()  + "\"></iframe>" +
                     "</div>" +
                     s[match[1]:]
@@ -212,6 +213,25 @@ func getRegexlist(filename string) ([]*regexp.Regexp,  error) {
     return list, nil
 }
 
+func getParentControlScript() string {
+    return `
+    <script type="text/javascript">
+        // Here "addEventListener" is for standards-compliant web browsers and "attachEvent" is for IE Browsers.
+        var eventMethod = window.addEventListener ? "addEventListener" : "attachEvent";
+        var eventer = window[eventMethod];
+        // onmessage for attachEvent, message for addEventListener
+        var messageEvent = eventMethod == "attachEvent" ? "onmessage" : "message";
+        // Listen to message from child IFrame window
+        eventer(messageEvent, function (e) {
+            if (e.origin.slice(0, 17) !== "http://127.0.0.1:" && e.origin.slice(0, 18) !== "https://127.0.0.1:") {
+                return;
+            }
+            alert(e.origin);
+            alert(e.data);
+        }, false);
+    </script>
+    `
+}
 
 func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintf(w, `
@@ -228,26 +248,25 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
             display: block;
             padding: 0;
             margin: 0;
-            width: 100%;
+            width: 100%%;
         }
         #page-controls {
             display: block;
             clear: both;
             background-color: transparent;
-            margin-left: auto;
-            margin-right: auto;
-            margin-top: 0;
-            margin-bottom: 10px;
+            margin: 0 0 10px 0;
             padding: 0;
-
+            width: 220px;
         }
         .control-item {
             display: inline-block;
-            padding: 4px 8px;
+            padding: 2px 4px;
             margin: 0;
             font-size: 14px;
             font-weight: bold;
             cursor: pointer;
+            width: 26px;
+            text-align: center;
             border: 2px solid transparent;
         }
         .control-item:hover {
@@ -283,7 +302,7 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
             <div id="stat-num-allow" class="control-item">0</div>
             <div id="stat-num-block" class="control-item">0</div>
             <div id="stat-num-manual" class="control-item">0</div>
-            <div id="move-controls" class="control-item">&lt;</div>
+            <div id="move-controls" class="control-item">&#x25BC;</div>
             <div id="toggle-details" class="control-item">+</div>
         </div>
     </div>
@@ -308,6 +327,11 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
         manual: 0
     };
 
+    var controlState = {
+        upTop: true,
+        expanded: false
+    };
+
     (function poll() {
         var category = location.search;
         var exceptionString = "%s";
@@ -326,7 +350,9 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
         if (sinceTime) {
             optionalSince = "&since_time=" + sinceTime;
         }
-        $.ajax({ url: "http://127.0.0.1:%s/events?timeout=" + timeout + "&category=" + category + optionalSince,
+        var pollUrl = "http://127.0.0.1:%s/events?timeout=" + timeout + "&category=" + category + optionalSince;
+        console.log(pollUrl);
+        $.ajax({ url: pollUrl,
             success: function(data) {
                 var receivedTime = (new Date()).toISOString();
                 if (data && data.events && data.events.length > 0) {
@@ -350,7 +376,8 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
                     sleep(1000);
                 }
             }, dataType: "json",
-        error: function () {
+        error: function (data) {
+            console.log(data);
             console.log("Error in ajax request--trying again shortly...");
             //sleep(3000);
         },
@@ -407,6 +434,17 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
            + pad(d.getUTCMinutes())+':'
            + pad(d.getUTCSeconds())+'Z'
     };
+
+    $("#toggle-details").click(function(event) {
+        controlState.expanded = !controlState.expanded;
+        window.parent.postMessage({expanded: controlState.expanded}, "*");
+    });
+
+    $("#move-controls").click(function(event) {
+        controlState.upTop = !controlState.upTop;
+        window.parent.postMessage({upTop: controlState.upTop}, "*");
+    });
+
     </script>
 </body>
 </html>`, proxyExceptionString, proxyExceptionString, controlPort)
