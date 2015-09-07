@@ -170,7 +170,7 @@ func main() {
                 // giant strings together.
                 return s[:match[1]] +
                     getParentControlScript() +
-                    "<div id=\"proxyblock-controls\" style=\"position: fixed; height: 42px; width: 222px !important; top: 4px; right: 8px; z-index: 99999999;\">" +
+                    "<div id=\"proxyblock-controls\" style=\"position: fixed; height: 42px; width: 230px !important; top: 4px; right: 8px; z-index: 99999999;\">" +
                     "<iframe id=\"proxyblock-frame\" scrolling=\"no\" style=\"overflow: hidden; background-color: #FFFFFF; border: 2px solid black; width: 100%; height: 100%;\" " +
                     "src=\"http://127.0.0.1:" + controlPort + "/page-menu?page=" + ctx.Req.URL.String()  + "\"></iframe>" +
                     "</div>" +
@@ -233,7 +233,6 @@ func getParentControlScript() string {
                 if (e.data.upTop) {
                     wrapper.style.bottom = null;
                     wrapper.style.top = "4px";
-
                 } else {
                     wrapper.style.top = null;
                     wrapper.style.bottom = "8px";
@@ -242,9 +241,13 @@ func getParentControlScript() string {
             if (e.data.expanded !== undefined) {
                 // user toggled control exanded state.
                 if (e.data.expanded) {
-
+                    wrapper.style.height = "90%";
+                    wrapper.style.width = "90%";
+                    frame.setAttribute("scrolling", "auto");
                 } else {
-
+                    wrapper.style.height = "42px";
+                    wrapper.style.width = "230px";
+                    frame.setAttribute("scrolling", "no");
                 }
             }
         }, false);
@@ -262,12 +265,8 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
         body {
             color: #000000;
             background-color: #EEEEEE;
-        }
-        #control-wrapper {
-            display: block;
-            padding: 0;
-            margin: 0;
-            width: 100%%;
+            font-family: monospace;
+            font-size: 12px;
         }
         #page-controls {
             display: block;
@@ -275,12 +274,13 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
             background-color: transparent;
             margin: 0 0 10px 0;
             padding: 0;
-            width: 220px;
+            width: 100%%;
+            height: 10px;
         }
         .control-item {
             display: inline-block;
             padding: 2px 4px;
-            margin: 0;
+            margin: 0 4px 0 0;
             font-size: 14px;
             font-weight: bold;
             cursor: pointer;
@@ -291,29 +291,52 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
         .control-item:hover {
             border: 2px solid black;
         }
-
         #stat-num-allow {
             background-color: #77FF77;
+            float: left;
         }
         #stat-num-block {
             background-color: #FF7777;
+            float: left;
         }
         #stat-num-manual {
             background-color: #FFFF77;
+            float: left;
         }
         #move-controls {
             background-color: #BBBBBB;
+            float: right;
+            margin: 0;
         }
         #toggle-details {
             background-color: #AABBFF;
+            float: right;
         }
         #info {
-            font-size: 12px;
+            font-size: 14px;
             font-weight: normal;
             color: #000000;
             padding: 0;
-            margin: 0;
+            margin: 0 0 0 4px;
         }
+        th {
+            background-color: #EEEEEE;
+        }
+        tr {
+            padding: 0;
+            margin: 0;
+            background-color: #DDDDDD;
+        }
+        tr:nth-child(even) {
+            background-color: #EEEEEE;
+        }
+        tr:hover {
+            background-color: #FFFFCC;
+        }
+        td {
+            padding: 2px;
+        }
+
     </style>
 </head><body>
     <div id="control-wrapper">
@@ -325,8 +348,9 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
             <div id="toggle-details" class="control-item">+</div>
         </div>
     </div>
+    <br />
     <h3 id="info"></h3>
-    <table border=1>
+    <table border=0>
       <tr>
         <th>Requests</th>
       </tr>
@@ -366,8 +390,8 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
             category = category.slice(0, exceptionString.length);
         }
         $('#info').text(category);
+        $('#info').attr('alt', category);
         var timeout = 15;
-
         var optionalSince = "";
         if (sinceTime) {
             optionalSince = "&since_time=" + sinceTime;
@@ -381,7 +405,7 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
                     // to keep latest event on top
                     for (var i = data.events.length - 1; i >= 0 ; i--) {
                         tally(data.events[i]);
-                        $("#stuff-happening").append(getFormattedEvent(data.events[i], receivedTime));
+                        $("#stuff-happening").before(getFormattedEvent(data.events[i], receivedTime));
                         sinceTime = data.events[i].timestamp;
                     }
                 }
@@ -456,6 +480,11 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
 
     $("#toggle-details").click(function(event) {
         controlState.expanded = !controlState.expanded;
+        if (controlState.expanded) {
+            $(this).html("_");
+        } else {
+            $(this).html("+");
+        }
         window.parent.postMessage({expanded: controlState.expanded}, "*");
     });
 
