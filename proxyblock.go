@@ -38,6 +38,7 @@ func NewControlServer(port string, eventAjaxHandler func(w http.ResponseWriter, 
     mux := http.NewServeMux()
     mux.HandleFunc("/page-menu", pageMenuHandler)
     mux.HandleFunc("/events", eventAjaxHandler)
+    mux.HandleFunc("/proxy-settings", proxySettingsHandler)
     s.https.Handler = mux
     return s
 }
@@ -243,16 +244,24 @@ func getParentControlScript() string {
                 if (e.data.expanded) {
                     wrapper.style.height = "90%";
                     wrapper.style.width = "90%";
+                    wrapper.style.maxHeight = "1000px";
+                    wrapper.style.maxWidth = "900px";
                     frame.setAttribute("scrolling", "auto");
                 } else {
                     wrapper.style.height = "42px";
                     wrapper.style.width = "230px";
+                    wrapper.style.maxHeight = null;
+                    wrapper.style.maxWidth = null;
                     frame.setAttribute("scrolling", "no");
                 }
             }
         }, false);
     </script>
     `
+}
+
+func proxySettingsHandler(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprintf(w, `<h1>ProxyBlock Settings</h1><h3>Todo</h3>`)
 }
 
 func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
@@ -302,6 +311,7 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
         #stat-num-manual {
             background-color: #FFFF77;
             float: left;
+            margin-right: 6px;
         }
         #move-controls {
             background-color: #BBBBBB;
@@ -346,8 +356,6 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
             vertical-align: top;
             border-top: 1px solid black;
         }
-        td.request-status {
-        }
         td.request-status.status-allowed {
             color: #000000;
             background-color: #88FF88;
@@ -363,12 +371,18 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
         .control-item.activated {
             border: 2px solid #0000FF;
         }
-        #event-table.status-blocked tr.status-allowed, #event-table.status-blocked tr.status-manual {
+        #open-settings {
+            color: #000000;
             display: none;
+            width: 67px;
+            margin: 0;
+            background-color: #44DDFF;
         }
-        #event-table.status-allowed tr.status-blocked, #event-table.status-allowed tr.status-manual {
-             display: none;
+        #open-settings.showme {
+            display: inline-block;
         }
+        #event-table.status-blocked tr.status-allowed, #event-table.status-blocked tr.status-manual,
+        #event-table.status-allowed tr.status-blocked, #event-table.status-allowed tr.status-manual,
         #event-table.status-manual tr.status-blocked, #event-table.status-manual tr.status-allowed {
             display: none;
         }
@@ -379,6 +393,7 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
             <div id="stat-num-allow" class="control-item">0</div>
             <div id="stat-num-block" class="control-item">0</div>
             <div id="stat-num-manual" class="control-item">0</div>
+            <a href="/proxy-settings" target="_open_proxy_settings"><div id="open-settings" class="control-item">Settings</div></a>
             <div id="move-controls" class="control-item">&#x25BC;</div>
             <div id="toggle-details" class="control-item">+</div>
         </div>
@@ -388,6 +403,7 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
     <table id="event-table" border=0>
       <tr>
         <th>Status</th>
+        <th>Time</th>
         <th id="requests-title">Requests</th>
       </tr>
       <tr id="stuff-happening">
@@ -437,8 +453,6 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
             success: function(data) {
                 var receivedTime = (new Date()).toISOString();
                 if (data && data.events && data.events.length > 0) {
-                    // Events are most recent first, so insertBefore from end of array
-                    // to keep latest event on top
                     for (var i = data.events.length - 1; i >= 0 ; i--) {
                         tally(data.events[i]);
                         $("#stuff-happening").before(getFormattedEvent(data.events[i], receivedTime));
@@ -488,8 +502,11 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
                 status = "<td class=\"request-status status-manual\">Manual</td>";
                 rowClass = "status-manual";
             }
+            var d = new Date(event.timestamp);
+            var t = d.toLocaleTimeString();
             return "<tr class='event-item " + rowClass + "'>" + status +
-                "<td>" + url + "</td>" +
+                "<td>" + t.slice(0, t.length - 3) + "</td>" +
+                "<td class='request-url'>" + url + "</td>" +
                 "</tr>";
         }
         return "";
@@ -538,8 +555,12 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
         controlState.expanded = !controlState.expanded;
         if (controlState.expanded) {
             $(this).html("_");
+            setTimeout(function () {
+                $("#open-settings").addClass("showme");
+            }, 200);
         } else {
             $(this).html("+");
+            $("#open-settings").removeClass("showme");
         }
         window.parent.postMessage({expanded: controlState.expanded}, "*");
     });
@@ -601,4 +622,3 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
 </body>
 </html>`, proxyExceptionString, proxyExceptionString, controlPort)
 }
-
