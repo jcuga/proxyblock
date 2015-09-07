@@ -319,24 +319,59 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
             padding: 0;
             margin: 0 0 0 4px;
         }
+        table {
+            border: 0;
+            margin: 6px 0 0 0;
+            padding: 0;
+        }
         th {
-            background-color: #EEEEEE;
+            text-align: left;
+            padding: 3px 4px;
         }
         tr {
             padding: 0;
             margin: 0;
-            background-color: #DDDDDD;
+            background-color: #DDDDFF;
         }
         tr:nth-child(even) {
-            background-color: #EEEEEE;
+            background-color: #EEEEFF;
         }
         tr:hover {
             background-color: #FFFFCC;
+            cursor: default;
         }
         td {
-            padding: 2px;
+            padding: 3px 4px;
+            text-align: left;
+            vertical-align: top;
+            border-top: 1px solid black;
         }
-
+        td.request-status {
+        }
+        td.request-status.status-allowed {
+            color: #000000;
+            background-color: #88FF88;
+        }
+        td.request-status.status-blocked {
+            color: #000000;
+            background-color: #FF8888;
+        }
+        td.request-status.status-manual {
+            color: #000000;
+            background-color: #FFFF88;
+        }
+        .control-item.activated {
+            border: 2px solid #0000FF;
+        }
+        #event-table.status-blocked tr.status-allowed, #event-table.status-blocked tr.status-manual {
+            display: none;
+        }
+        #event-table.status-allowed tr.status-blocked, #event-table.status-allowed tr.status-manual {
+             display: none;
+        }
+        #event-table.status-manual tr.status-blocked, #event-table.status-manual tr.status-allowed {
+            display: none;
+        }
     </style>
 </head><body>
     <div id="control-wrapper">
@@ -350,9 +385,10 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
     </div>
     <br />
     <h3 id="info"></h3>
-    <table border=0>
+    <table id="event-table" border=0>
       <tr>
-        <th>Requests</th>
+        <th>Status</th>
+        <th id="requests-title">Requests</th>
       </tr>
       <tr id="stuff-happening">
       </tr>
@@ -434,9 +470,29 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
     };
 
     function getFormattedEvent(event) {
-      return "<tr class='event-item'>" +
-        "<td>" + event.data + "</td>" +
-        "</tr>";
+        if (!event && !event.data) {
+            return "";
+        }
+        var i = event.data.indexOf(": ");
+        if (i > 0) {
+            var status = "<td class=\"request-status status-unknown\">???</td>";
+            var url =  event.data.slice(i + 2, event.data.length);
+            var rowClass = "status-unknown";
+            if (event.data.slice(0,1) == 'A') {
+                status = "<td class=\"request-status status-allowed\">Allowed</td>";
+                rowClass = "status-allowed";
+            } else if (event.data.slice(0,1) == 'B') {
+                status = "<td class=\"request-status status-blocked\">Blocked</td>";
+                rowClass = "status-blocked";
+            } else if (event.data.slice(0,1) == 'M') {
+                status = "<td class=\"request-status status-manual\">Manual</td>";
+                rowClass = "status-manual";
+            }
+            return "<tr class='event-item " + rowClass + "'>" + status +
+                "<td>" + url + "</td>" +
+                "</tr>";
+        }
+        return "";
     };
 
     function tally(event) {
@@ -496,6 +552,49 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
             $(this).html("&#x25B2");
         }
         window.parent.postMessage({upTop: controlState.upTop}, "*");
+    });
+
+    function updateRequestColTitle() {
+        var table = $("#event-table");
+        if (table.hasClass("status-allowed")) {
+            $("#requests-title").text("Requests (Allowed)");
+        } else if (table.hasClass("status-blocked")) {
+            $("#requests-title").text("Requests (Blocked)");
+        } else if (table.hasClass("status-manual")) {
+            $("#requests-title").text("Requests (Manual)");
+        } else {
+            $("#requests-title").text("Requests");
+        }
+    };
+
+    $("#stat-num-allow").click(function(event) {
+        $("#stat-num-manual").removeClass("activated");
+        $("#stat-num-block").removeClass("activated");
+        $("#event-table").removeClass("status-blocked");
+        $("#event-table").removeClass("status-manual");
+        $("#event-table").toggleClass("status-allowed");
+        $(this).toggleClass("activated");
+        updateRequestColTitle();
+    });
+
+    $("#stat-num-block").click(function(event) {
+        $("#stat-num-allow").removeClass("activated");
+        $("#stat-num-manual").removeClass("activated");
+        $("#event-table").removeClass("status-allowed");
+        $("#event-table").removeClass("status-manual");
+        $("#event-table").toggleClass("status-blocked");
+        $(this).toggleClass("activated");
+        updateRequestColTitle();
+    });
+
+    $("#stat-num-manual").click(function(event) {
+        $("#stat-num-allow").removeClass("activated");
+        $("#stat-num-block").removeClass("activated");
+        $("#event-table").removeClass("status-allowed");
+        $("#event-table").removeClass("status-blocked");
+        $("#event-table").toggleClass("status-manual");
+        $(this).toggleClass("activated");
+        updateRequestColTitle();
     });
 
     </script>
