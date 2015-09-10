@@ -342,13 +342,16 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
             padding: 0;
             margin: 0;
             background-color: #DDDDFF;
+            cursor: default;
         }
         tr:nth-child(even) {
             background-color: #EEEEFF;
         }
         tr:hover {
             background-color: #FFFFCC;
-            cursor: default;
+        }
+        tr.event-item {
+            cursor: pointer;
         }
         td {
             padding: 3px 4px;
@@ -506,7 +509,9 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
             var t = d.toLocaleTimeString();
             return "<tr class='event-item " + rowClass + "'>" + status +
                 "<td>" + t.slice(0, t.length - 3) + "</td>" +
-                "<td class='request-url'>" + url + "</td>" +
+                "<td class='request-url'><span class='url'>" + url + "</span>" +
+                "<div class=\"details-wrapper\"></div>" +
+                "</td>" +
                 "</tr>";
         }
         return "";
@@ -618,6 +623,15 @@ func pageMenuHandler(w http.ResponseWriter, r *http.Request) {
         updateRequestColTitle();
     });
 
+    $(document).on("click", "tr.event-item", function(event){
+        if ($(this).hasClass("details")) {
+            $(this).removeClass("details");
+            $("div.details-wrapper", $(this)).html("");
+        } else {
+            $(this).addClass("details");
+            $("div.details-wrapper", $(this)).html("<h3>TODO - exception once versus always click</h3>if allowed option to block, or vice versa,  option to do either if manually allowed.  Also link to open new tab showing what rule made it allowed/blocked.");
+        }
+    });
     </script>
 </body>
 </html>`, proxyExceptionString, proxyExceptionString, controlPort)
