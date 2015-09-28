@@ -78,11 +78,11 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
         #move-controls {
             background-color: #BBBBBB;
             float: right;
-            margin: 0;
         }
         #toggle-details {
             background-color: #AABBFF;
             float: right;
+            margin: 0;
         }
         #info {
             font-size: 14px;
@@ -159,8 +159,8 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
             <div id="stat-num-block" class="control-item">0</div>
             <div id="stat-num-manual" class="control-item">0</div>
             <a href="/proxy-settings" target="_open_proxy_settings"><div id="open-settings" class="control-item">Settings</div></a>
-            <div id="move-controls" class="control-item">&#x25BC;</div>
             <div id="toggle-details" class="control-item">+</div>
+            <div id="move-controls" class="control-item">&#x25BC;</div>
         </div>
     </div>
     <br />
