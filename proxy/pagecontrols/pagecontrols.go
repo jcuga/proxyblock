@@ -5,20 +5,20 @@ package pagecontrols
 // experience.
 
 import (
-    "fmt"
-    "net/http"
+	"fmt"
+	"net/http"
 
-    "github.com/jcuga/proxyblock/proxy/vars"
+	"github.com/jcuga/proxyblock/proxy/vars"
 )
 
 const (
-    ProxyPageControlsUrl = "/page-controls"
+	ProxyPageControlsUrl = "/page-controls"
 )
 
 // Get the URL to our proxy page controls UI
 // Takes the original content url that we're proxying.
 func GetPageControlsUrl(url string) string {
-    return fmt.Sprintf("%s?page=%s", ProxyPageControlsUrl, url)
+	return fmt.Sprintf("%s?page=%s", ProxyPageControlsUrl, url)
 }
 
 // Serves our proxy content page controls.  This is loaded in an iframe that
@@ -26,8 +26,8 @@ func GetPageControlsUrl(url string) string {
 // allowed, manually allowed) as well as listing all requests made from that
 // page and (TODO) links to block/unblock those requests in the future.
 func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
-    // NOTE: '%' characters must be escaped as '%%'
-    fmt.Fprintf(w, `
+	// NOTE: '%' characters must be escaped as '%%'
+	fmt.Fprintf(w, `
 <!DOCTYPE html>
 <html>
 <head>
@@ -397,7 +397,7 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
     </script>
 </body>
 </html>`,
-    vars.ProxyExceptionString,
-    vars.ProxyExceptionString,
-    vars.ControlPort)
+		vars.ProxyExceptionString,
+		vars.ProxyExceptionString,
+		vars.ControlPort)
 }

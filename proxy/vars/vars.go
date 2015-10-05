@@ -5,12 +5,12 @@ package vars
 // state.  TODO: put these where they belong once refactoring is done.
 
 import (
-    "regexp"
+	"regexp"
 )
 
 var (
-    StartBodyTagMatcher = regexp.MustCompile(`(?i:<body.*>)`)
-    ControlPort = "8380"
-    // TODO: make this UUID generated on startup, accessed via singleton?
-    ProxyExceptionString = "LOL-WHUT-JUST-DOIT-DOOD"
+	StartBodyTagMatcher = regexp.MustCompile(`(?i:<body.*>)`)
+	ControlPort         = "8380"
+	// TODO: make this UUID generated on startup, accessed via singleton?
+	ProxyExceptionString = "LOL-WHUT-JUST-DOIT-DOOD"
 )
