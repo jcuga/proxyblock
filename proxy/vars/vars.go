@@ -10,7 +10,7 @@ import (
 
 var (
 	StartBodyTagMatcher = regexp.MustCompile(`(?i:<body.*>)`)
-	ControlPort         = "8380"
+	ProxyControlPort         = "8380"
 	// TODO: make this UUID generated on startup, accessed via singleton?
 	ProxyExceptionString = "LOL-WHUT-JUST-DOIT-DOOD"
 )

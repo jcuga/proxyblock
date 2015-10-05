@@ -399,5 +399,5 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
 </html>`,
 		vars.ProxyExceptionString,
 		vars.ProxyExceptionString,
-		vars.ControlPort)
+		vars.ProxyControlPort)
 }

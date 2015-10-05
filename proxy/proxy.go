@@ -23,7 +23,7 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool) (*goproxy.
 	// Start longpoll subscription manager
 	eventChan, eventAjaxHandler := longpolling.StartLongpollManager()
 	// Create and start control server for controlling proxy behavior
-	ctlServer := controls.NewControlServer(vars.ControlPort, eventAjaxHandler)
+	ctlServer := controls.NewControlServer(vars.ProxyControlPort, eventAjaxHandler)
 	ctlServer.Serve()
 
 	// TODO: move most of this into proxy.go and then cleanup/rename/comment
@@ -41,7 +41,7 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool) (*goproxy.
 		for _, w := range whiteList {
 			if w.MatchString(urlString) {
 				log.Printf("WHITELISTED:  %s\n", req.URL)
-				notifyEvent("Allowed", req, eventChan)
+				notifyProxyEvent("Allowed", req, eventChan)
 				return req, nil
 			}
 		}
@@ -52,7 +52,7 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool) (*goproxy.
 			if uErr == nil {
 				req.URL = u
 				log.Printf("MANUALLY ALLOWED: %s\n", req.URL)
-				notifyEvent("Manually Allowed", req, eventChan)
+				notifyProxyEvent("Manually Allowed", req, eventChan)
 				return req, nil
 			} else {
 				log.Printf("ERROR trying to rewrite URL. Url: %s, Error: %s", urlString, uErr)
@@ -74,7 +74,7 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool) (*goproxy.
 		for _, b := range blackList {
 			if b.MatchString(urlString) {
 				log.Printf("BLACKLISTED:  %s\n", req.URL)
-				notifyEvent("Blocked", req, eventChan)
+				notifyProxyEvent("Blocked", req, eventChan)
 				return req, goproxy.NewResponse(req,
 					goproxy.ContentTypeHtml, http.StatusForbidden,
 					fmt.Sprintf(`<html>
@@ -90,7 +90,7 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool) (*goproxy.
 			}
 		}
 		log.Printf("NOT MATCHED: (allow by default) %s\n", req.URL)
-		notifyEvent("Not matched, default allowed", req, eventChan)
+		notifyProxyEvent("Not matched, default allowed", req, eventChan)
 		return req, nil
 	})
 
@@ -112,7 +112,7 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool) (*goproxy.
 					getParentControlScript() +
 					"<div id=\"proxyblock-controls\" style=\"position: fixed; height: 42px; width: 230px !important; top: 4px; right: 8px; z-index: 99999999;\">" +
 					"<iframe id=\"proxyblock-frame\" scrolling=\"no\" style=\"overflow: hidden; background-color: #FFFFFF; border: 2px solid black; width: 100%; height: 100%;\" " +
-					"src=\"http://127.0.0.1:" + vars.ControlPort + pagecontrols.GetPageControlsUrl(ctx.Req.URL.String()) +
+					"src=\"http://127.0.0.1:" + vars.ProxyControlPort + pagecontrols.GetPageControlsUrl(ctx.Req.URL.String()) +
 					"\"></iframe>" +
 					"</div>" +
 					s[match[1]:]
@@ -125,7 +125,7 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool) (*goproxy.
 	return proxy, nil
 }
 
-func notifyEvent(action string, req *http.Request, events chan longpolling.Event) {
+func notifyProxyEvent(action string, req *http.Request, events chan longpolling.Event) {
 	var category string
 	// TODO: comments about how longpoll subscriptions for a given referrer (or
 	// url when not a referred page).  This way we can show all content allowed/blocked
