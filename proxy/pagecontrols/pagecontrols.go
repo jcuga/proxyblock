@@ -391,7 +391,24 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
             $("div.details-wrapper", $(this)).html("");
         } else {
             $(this).addClass("details");
-            $("div.details-wrapper", $(this)).html("<h3>TODO - exception once versus always click</h3>if allowed option to block, or vice versa,  option to do either if manually allowed.  Also link to open new tab showing what rule made it allowed/blocked.");
+            var item_url_span = $(".url", $(this));
+            var item_url = "";
+            if (item_url_span) {
+                item_url = item_url_span.text();
+            }
+            var controlLinks = "";
+            if (item_url) {
+                // Show add to whitelist/blacklist or both (if manually allowed)
+                if (!$(this).hasClass("status-allowed")) {
+                    // wasn't allowed, so provide option to allow it
+                    controlLinks += "<p><a href=\"/add-wl?url=" + item_url + "\">Add to Whitelist</a></p>";
+                }
+                if (!$(this).hasClass("status-blocked")) {
+                    // wasn't blocked, so provide option to block it
+                    controlLinks += "<p><a href=\"/add-bl?url=" + item_url + "\">Add to Blacklist</a></p>";
+                }
+                $("div.details-wrapper", $(this)).html(controlLinks);
+            }
         }
     });
     </script>

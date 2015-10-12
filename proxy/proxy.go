@@ -19,15 +19,13 @@ import (
 	"github.com/jcuga/proxyblock/utils"
 )
 
-func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool) (*goproxy.ProxyHttpServer, error) {
+func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
+	whiteListUpdates, blackListUpdates chan string) (*goproxy.ProxyHttpServer, error) {
 	// Start longpoll subscription manager
 	eventChan, eventAjaxHandler := longpolling.StartLongpollManager()
 	// Create and start control server for controlling proxy behavior
-	ctlServer := controls.NewControlServer(vars.ProxyControlPort, eventAjaxHandler)
+	ctlServer := controls.NewControlServer(vars.ProxyControlPort, eventAjaxHandler, whiteListUpdates, blackListUpdates)
 	ctlServer.Serve()
-
-	// TODO: move most of this into proxy.go and then cleanup/rename/comment
-	// once code is nicely segmented
 
 	// Create and start our content blocking proxy:
 	proxy := goproxy.NewProxyHttpServer()
@@ -38,6 +36,11 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool) (*goproxy.
 			req.URL.Scheme = "http"
 		}
 		urlString := req.URL.String()
+
+		// Check for any updates to our whitelist/blacklist values
+		whiteList, blackList = checkWhiteBlackListUpdates(whiteList, blackList, whiteListUpdates,
+			blackListUpdates)
+		// Now apply whitelist/blacklist rules:
 		for _, w := range whiteList {
 			if w.MatchString(urlString) {
 				log.Printf("WHITELISTED:  %s\n", req.URL)
@@ -183,4 +186,49 @@ func getParentControlScript() string {
         }, false);
     </script>
     `
+}
+
+func checkWhiteBlackListUpdates(whiteList, blackList []*regexp.Regexp, whiteListUpdates,
+	blackListUpdates <-chan string) (wl, bl []*regexp.Regexp) {
+	// Right now we're just adding exact url matching... so just regexp escape
+	// the new urls and add them to the appropriate white/black list.
+	// Try pulling all updates available, break when no more
+wlLoop:
+	for {
+		select {
+		case new_url := <-whiteListUpdates:
+			fmt.Println("New whitelist entry to add: ", new_url)
+			if r, err := regexp.Compile(regexp.QuoteMeta(new_url)); err == nil {
+				// TODO: only send if regexp not in list already!
+				whiteList = append(whiteList, r)
+			} else {
+				// since we're regexp escaping (via QuoteMeta) this should never fail
+				log.Fatalf("Invalid whitelist pattern added: %q",
+					regexp.QuoteMeta(new_url))
+			}
+		default:
+			// No whitelist updates, kill loop
+			break wlLoop
+		}
+	}
+	// Try pulling all updates available, break when no more
+blLoop:
+	for {
+		select {
+		case new_url := <-blackListUpdates:
+			fmt.Println("New blacklist entry to add: ", new_url)
+			if r, err := regexp.Compile(regexp.QuoteMeta(new_url)); err == nil {
+				// TODO: only send if regexp not in list already!
+				blackList = append(blackList, r)
+			} else {
+				// since we're regexp escaping (via QuoteMeta) this should never fail
+				log.Fatalf("Invalid blacklist pattern added: %q",
+					regexp.QuoteMeta(new_url))
+			}
+		default:
+			// No blacklist updates, kill loop
+			break blLoop
+		}
+	}
+	return whiteList, blackList
 }
