@@ -39,6 +39,28 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
             font-family: monospace;
             font-size: 12px;
         }
+        .details-wrapper .add-wl {
+            padding: 6px;
+            background-color: #00FF00;
+            color: #000000;
+            border: 1px solid #000000;
+            display: inline-block;
+        }
+        .details-wrapper .add-wl:hover {
+            color: #FFFFFF;
+            border: 1px solid #FFFFFF;
+        }
+        .details-wrapper .add-bl {
+            padding: 6px;
+            background-color: #FF0000;
+            color: #000000;
+            border: 1px solid #000000;
+            display: inline-block;
+        }
+        .details-wrapper .add-bl:hover {
+            color: #FFFFFF;
+            border: 1px solid #FFFFFF;
+        }
         #page-controls {
             display: block;
             clear: both;
@@ -391,26 +413,75 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
             $("div.details-wrapper", $(this)).html("");
         } else {
             $(this).addClass("details");
-            var item_url_span = $(".url", $(this));
-            var item_url = "";
-            if (item_url_span) {
-                item_url = item_url_span.text();
+            var controlLinks = "<p>";
+            // Show add to whitelist/blacklist or both (if manually allowed)
+            if (!$(this).hasClass("status-allowed")) {
+                // wasn't allowed, so provide option to allow it
+                controlLinks += "<span class=\"add-wl\">Whitelist URL</span>";
             }
-            var controlLinks = "";
-            if (item_url) {
-                // Show add to whitelist/blacklist or both (if manually allowed)
-                if (!$(this).hasClass("status-allowed")) {
-                    // wasn't allowed, so provide option to allow it
-                    controlLinks += "<p><a href=\"/add-wl?url=" + item_url + "\">Add to Whitelist</a></p>";
-                }
-                if (!$(this).hasClass("status-blocked")) {
-                    // wasn't blocked, so provide option to block it
-                    controlLinks += "<p><a href=\"/add-bl?url=" + item_url + "\">Add to Blacklist</a></p>";
-                }
-                $("div.details-wrapper", $(this)).html(controlLinks);
+            if (!$(this).hasClass("status-blocked")) {
+                // wasn't blocked, so provide option to block it
+                controlLinks += "<span class=\"add-bl\">Blacklist URL</span>";
             }
+            controlLinks += "</p>";
+            $("div.details-wrapper", $(this)).html(controlLinks);
         }
     });
+
+    $(document).on("click", "tr.event-item .add-wl", function(event){
+        event.stopPropagation();
+        var item = $(this);
+        var item_url = $(".url", item.parents(".request-url")).text() || "";
+        if (!item.hasClass('clicked')) {
+            item.addClass('clicked');
+            item.text("Adding...");
+            $.ajax({
+                url: "/add-wl",
+                type: "get",
+                data:{url: item_url},
+                success: function(response) {
+                    item.text("Added to Whitelist.");
+                    // don't remove clicked class to prevent resends
+                },
+                error: function(xhr) {
+                    item.text('ERROR adding to Whitelist.');
+                    // let user try again.
+                    item.removeClass('clicked');
+                }
+            });
+        } else {
+            // already clicked or succeeded, don't refire
+            return;
+        }
+    });
+
+    $(document).on("click", "tr.event-item .add-bl", function(event){
+        event.stopPropagation();
+        var item = $(this);
+        var item_url = $(".url", item.parents(".request-url")).text() || "";
+        if (!item.hasClass('clicked')) {
+            item.addClass('clicked');
+            item.text("Adding...");
+            $.ajax({
+                url: "/add-bl",
+                type: "get",
+                data:{url: item_url},
+                success: function(response) {
+                    item.text("Added to Blacklist.");
+                    // don't remove clicked class to prevent resends
+                },
+                error: function(xhr) {
+                    item.text('ERROR adding to Blacklist.');
+                    // let user try again.
+                    item.removeClass('clicked');
+                }
+            });
+        } else {
+            // already clicked or succeeded, don't refire
+            return;
+        }
+    });
+
     </script>
 </body>
 </html>`,

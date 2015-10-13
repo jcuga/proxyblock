@@ -4,6 +4,7 @@ package controls
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/jcuga/proxyblock/proxy/pagecontrols"
@@ -42,6 +43,7 @@ func getAddListItemHandler(updateList chan<- string) func(http.ResponseWriter, *
 			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprint(w, "400 Bad request.")
 		}
+		log.Printf("Adding item to white/black list: %s", new_url)
 		// send new url to proxy and it will add it to it's white/black list
 		updateList <- new_url
 		fmt.Fprint(w, "200 ok")
