@@ -222,6 +222,9 @@ wlLoop:
 			u := strings.TrimSpace(new_url)
 			if len(u) > 0 {
 				whiteListMap[u] = true
+				// also remove this specific url from manual blacklist
+				// in case user previously blacklisted it
+				delete(blackListMap, u)
 			} else {
 				log.Printf("ERROR: Invalid whitelist pattern provided: %q",
 					new_url)
@@ -240,6 +243,9 @@ blLoop:
 			u := strings.TrimSpace(new_url)
 			if len(u) > 0 {
 				blackListMap[u] = true
+				// also remove this specific url from manual whitelist
+				// in case user previously whitelisted it
+				delete(whiteListMap, u)
 			} else {
 				log.Printf("ERROR: Invalid blacklist pattern provided: %q",
 					new_url)
