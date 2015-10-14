@@ -39,25 +39,33 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
             font-family: monospace;
             font-size: 12px;
         }
-        .details-wrapper .add-wl {
+        .event-item .details-wrapper {
+            display: none;
+        }
+
+        .event-item.details .details-wrapper {
+            display: block;
+        }
+
+        .item-control-links .add-wl {
             padding: 6px;
             background-color: #00FF00;
             color: #000000;
             border: 1px solid #000000;
             display: inline-block;
         }
-        .details-wrapper .add-wl:hover {
+        .item-control-links .add-wl:hover {
             color: #FFFFFF;
             border: 1px solid #FFFFFF;
         }
-        .details-wrapper .add-bl {
+        .item-control-links .add-bl {
             padding: 6px;
             background-color: #FF0000;
             color: #000000;
             border: 1px solid #000000;
             display: inline-block;
         }
-        .details-wrapper .add-bl:hover {
+        .item-control-links .add-bl:hover {
             color: #FFFFFF;
             border: 1px solid #FFFFFF;
         }
@@ -278,23 +286,31 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
         if (i > 0) {
             var status = "<td class=\"request-status status-unknown\">???</td>";
             var url =  event.data.slice(i + 2, event.data.length);
+            var controlLinks = "<p class=\"item-control-links\">";
             var rowClass = "status-unknown";
             if (event.data.slice(0,1) == 'A') {
                 status = "<td class=\"request-status status-allowed\">Allowed</td>";
                 rowClass = "status-allowed";
+                controlLinks += "<span class=\"add-bl\">Blacklist URL</span>";
             } else if (event.data.slice(0,1) == 'B') {
                 status = "<td class=\"request-status status-blocked\">Blocked</td>";
                 rowClass = "status-blocked";
+                controlLinks += "<span class=\"add-wl\">Whitelist URL</span>";
             } else if (event.data.slice(0,1) == 'M') {
                 status = "<td class=\"request-status status-manual\">Manual</td>";
                 rowClass = "status-manual";
+                controlLinks += "<span class=\"add-wl\">Whitelist URL</span>";
+                controlLinks += "<span class=\"add-bl\">Blacklist URL</span>";
             }
+            controlLinks += "</p>";
             var d = new Date(event.timestamp);
             var t = d.toLocaleTimeString();
             return "<tr class='event-item " + rowClass + "'>" + status +
                 "<td>" + t.slice(0, t.length - 3) + "</td>" +
                 "<td class='request-url'><span class='url'>" + url + "</span>" +
-                "<div class=\"details-wrapper\"></div>" +
+                "<div class=\"details-wrapper\">" +
+                controlLinks +
+                "</div>" +
                 "</td>" +
                 "</tr>";
         }
@@ -408,24 +424,7 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
     });
 
     $(document).on("click", "tr.event-item", function(event){
-        if ($(this).hasClass("details")) {
-            $(this).removeClass("details");
-            $("div.details-wrapper", $(this)).html("");
-        } else {
-            $(this).addClass("details");
-            var controlLinks = "<p>";
-            // Show add to whitelist/blacklist or both (if manually allowed)
-            if (!$(this).hasClass("status-allowed")) {
-                // wasn't allowed, so provide option to allow it
-                controlLinks += "<span class=\"add-wl\">Whitelist URL</span>";
-            }
-            if (!$(this).hasClass("status-blocked")) {
-                // wasn't blocked, so provide option to block it
-                controlLinks += "<span class=\"add-bl\">Blacklist URL</span>";
-            }
-            controlLinks += "</p>";
-            $("div.details-wrapper", $(this)).html(controlLinks);
-        }
+        $(this).toggleClass("details");
     });
 
     $(document).on("click", "tr.event-item .add-wl", function(event){

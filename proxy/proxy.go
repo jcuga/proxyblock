@@ -27,9 +27,9 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
 	ctlServer := controls.NewControlServer(vars.ProxyControlPort, eventAjaxHandler, whiteListUpdates, blackListUpdates)
 	ctlServer.Serve()
 
-    // Manually allowed/blocked sites:
-    manualWhiteList := make(map[string]bool)
-    manualBlackList := make(map[string]bool)
+	// Manually allowed/blocked sites:
+	manualWhiteList := make(map[string]bool)
+	manualBlackList := make(map[string]bool)
 
 	// Create and start our content blocking proxy:
 	proxy := goproxy.NewProxyHttpServer()
@@ -42,32 +42,32 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
 		urlString := req.URL.String()
 
 		// Check for any updates to our whitelist/blacklist values
-        checkWhiteBlackListUpdates(manualWhiteList, manualBlackList,
-            whiteListUpdates, blackListUpdates)
+		checkWhiteBlackListUpdates(manualWhiteList, manualBlackList,
+			whiteListUpdates, blackListUpdates)
 
 		// Now apply whitelist/blacklist rules:
 		for _, w := range whiteList {
-			if w.MatchString(urlString)  {
-                // whitelisted by rules, but was this specific URL blacklisted
-                // by user?
-                if _, ok := manualBlackList[strings.TrimSpace(urlString)]; ok {
-                    // stop trying to find whitelist matches
-                    log.Printf("user-DENIED whitelisting:  %s\n", req.URL)
-                    break
-                } else {
-                    log.Printf("WHITELISTED:  %s\n", req.URL)
-                    notifyProxyEvent("Allowed", req, eventChan)
-                    return req, nil
-                }
+			if w.MatchString(urlString) {
+				// whitelisted by rules, but was this specific URL blacklisted
+				// by user?
+				if _, ok := manualBlackList[strings.TrimSpace(urlString)]; ok {
+					// stop trying to find whitelist matches
+					log.Printf("user-DENIED whitelisting:  %s\n", req.URL)
+					break
+				} else {
+					log.Printf("WHITELISTED:  %s\n", req.URL)
+					notifyProxyEvent("Allowed", req, eventChan)
+					return req, nil
+				}
 			}
 		}
-        // Check if this was explicitly whitelisted by user:
-        if _, ok := manualWhiteList[strings.TrimSpace(urlString)]; ok {
-            // no need to consider blacklists, serve content
-            log.Printf("user-eplicit WHITELISTED:  %s\n", req.URL)
-            notifyProxyEvent("Allowed", req, eventChan)
-            return req, nil
-        }
+		// Check if this was explicitly whitelisted by user:
+		if _, ok := manualWhiteList[strings.TrimSpace(urlString)]; ok {
+			// no need to consider blacklists, serve content
+			log.Printf("user-eplicit WHITELISTED:  %s\n", req.URL)
+			notifyProxyEvent("Allowed", req, eventChan)
+			return req, nil
+		}
 
 		// See if we're manually allowing this page thru
 		if strings.HasSuffix(urlString, vars.ProxyExceptionString) {
@@ -210,7 +210,7 @@ func getParentControlScript() string {
 }
 
 func checkWhiteBlackListUpdates(whiteListMap, blackListMap map[string]bool,
-        whiteListUpdates, blackListUpdates <-chan string) {
+	whiteListUpdates, blackListUpdates <-chan string) {
 	// Right now we're just adding exact url matching... so just regexp escape
 	// the new urls and add them to the appropriate white/black list.
 	// Try pulling all updates available, break when no more
@@ -218,14 +218,14 @@ wlLoop:
 	for {
 		select {
 		case new_url := <-whiteListUpdates:
-            fmt.Println("New whitelist entry to add: ", new_url)
-            u := strings.TrimSpace(new_url)
-            if len(u) > 0 {
-                whiteListMap[u] = true
-            } else {
-                log.Printf("ERROR: Invalid whitelist pattern provided: %q",
-                    new_url)
-            }
+			fmt.Println("New whitelist entry to add: ", new_url)
+			u := strings.TrimSpace(new_url)
+			if len(u) > 0 {
+				whiteListMap[u] = true
+			} else {
+				log.Printf("ERROR: Invalid whitelist pattern provided: %q",
+					new_url)
+			}
 		default:
 			// No whitelist updates, kill loop
 			break wlLoop
@@ -236,14 +236,14 @@ blLoop:
 	for {
 		select {
 		case new_url := <-blackListUpdates:
-            fmt.Println("New blacklist entry to add: ", new_url)
-            u := strings.TrimSpace(new_url)
-            if len(u) > 0 {
-                blackListMap[u] = true
-            } else {
-                log.Printf("ERROR: Invalid blacklist pattern provided: %q",
-                    new_url)
-            }
+			fmt.Println("New blacklist entry to add: ", new_url)
+			u := strings.TrimSpace(new_url)
+			if len(u) > 0 {
+				blackListMap[u] = true
+			} else {
+				log.Printf("ERROR: Invalid blacklist pattern provided: %q",
+					new_url)
+			}
 		default:
 			// No blacklist updates, kill loop
 			break blLoop
