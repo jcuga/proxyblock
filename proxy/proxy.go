@@ -126,6 +126,15 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
 				// never called?
 				return s
 			}
+            // Don't inject iframe into responses that aren't successful
+            // ie 2xx response codes.
+            // Mainly this is to avoid injecting on our own block page,
+            // but it probably doesn't make sense for other failed pages either
+            if (ctx.Resp.StatusCode < 200 || ctx.Resp.StatusCode >= 300) {
+                // show page as-is
+                // remember: blocking content is already enforced by this point,
+                return s
+            }
 			match := vars.StartBodyTagMatcher.FindIndex([]byte(s))
 			if match != nil && len(match) >= 2 {
 				// TODO: make this more efficient by using a stream or some sort
