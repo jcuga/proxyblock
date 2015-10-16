@@ -155,13 +155,25 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
             color: #000000;
             background-color: #88FF88;
         }
+        td.request-status.status-allowed.now-blacklisted {
+            background-color: #FFAA88;
+        }
         td.request-status.status-blocked {
             color: #000000;
             background-color: #FF8888;
         }
+        td.request-status.status-blocked.now-whitelisted {
+            background-color: #BBEE88;
+        }
         td.request-status.status-manual {
             color: #000000;
             background-color: #FFFF88;
+        }
+        td.request-status.status-manual.now-whitelisted {
+            background-color: #BBEE88;
+        }
+        td.request-status.status-manual.now-blacklisted {
+            background-color: #FFAA88;
         }
         .control-item.activated {
             border: 2px solid #0000FF;
@@ -440,6 +452,11 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
                 data:{url: item_url},
                 success: function(response) {
                     item.text("Added to Whitelist.");
+                    var statusArea = $(".request-status", item.parents(".event-item"));
+                    if (statusArea) {
+                        statusArea.html(statusArea.html() + "<br />Now Whitelisted");
+                        statusArea.addClass("now-whitelisted");
+                    }
                     // don't remove clicked class to prevent resends
                 },
                 error: function(xhr) {
@@ -467,6 +484,11 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
                 data:{url: item_url},
                 success: function(response) {
                     item.text("Added to Blacklist.");
+                    var statusArea = $(".request-status", item.parents(".event-item"));
+                    if (statusArea) {
+                        statusArea.html(statusArea.html() + "<br />Now Blacklisted");
+                        statusArea.addClass("now-blacklisted");
+                    }
                     // don't remove clicked class to prevent resends
                 },
                 error: function(xhr) {
