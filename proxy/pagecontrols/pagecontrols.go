@@ -38,6 +38,7 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
             background-color: #EEEEEE;
             font-family: monospace;
             font-size: 12px;
+            overflow: auto;
         }
         .event-item .details-wrapper {
             display: none;
@@ -234,6 +235,21 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
         expanded: false
     };
 
+    function toggleDetailsView(detailButton) {
+        var detailButton = $("#toggle-details");
+        controlState.expanded = !controlState.expanded;
+        if (controlState.expanded) {
+            detailButton.html("_");
+            setTimeout(function () {
+                $("#open-settings").addClass("showme");
+            }, 200);
+        } else {
+            detailButton.html("+");
+            $("#open-settings").removeClass("showme");
+        }
+        window.parent.postMessage({expanded: controlState.expanded}, "*");
+    }
+
     // for browsers that don't have console
     if(typeof window.console == 'undefined') { window.console = {log: function (msg) {} }; }
 
@@ -369,17 +385,7 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
     };
 
     $("#toggle-details").click(function(event) {
-        controlState.expanded = !controlState.expanded;
-        if (controlState.expanded) {
-            $(this).html("_");
-            setTimeout(function () {
-                $("#open-settings").addClass("showme");
-            }, 200);
-        } else {
-            $(this).html("+");
-            $("#open-settings").removeClass("showme");
-        }
-        window.parent.postMessage({expanded: controlState.expanded}, "*");
+        toggleDetailsView();
     });
 
     $("#move-controls").click(function(event) {
@@ -413,6 +419,10 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
         $("#event-table").toggleClass("status-allowed");
         $(this).toggleClass("activated");
         updateRequestColTitle();
+        // If we're not showing request details already, show them
+        if (!controlState.expanded) {
+            toggleDetailsView();
+        }
     });
 
     $("#stat-num-block").click(function(event) {
@@ -423,6 +433,10 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
         $("#event-table").toggleClass("status-blocked");
         $(this).toggleClass("activated");
         updateRequestColTitle();
+        // If we're not showing request details already, show them
+        if (!controlState.expanded) {
+            toggleDetailsView();
+        }
     });
 
     $("#stat-num-manual").click(function(event) {
@@ -433,6 +447,10 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
         $("#event-table").toggleClass("status-manual");
         $(this).toggleClass("activated");
         updateRequestColTitle();
+        // If we're not showing request details already, show them
+        if (!controlState.expanded) {
+            toggleDetailsView();
+        }
     });
 
     $(document).on("click", "tr.event-item", function(event){
@@ -456,6 +474,7 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
                     if (statusArea) {
                         statusArea.html(statusArea.html() + "<br />Now Whitelisted");
                         statusArea.addClass("now-whitelisted");
+                        item.parents(".event-item").removeClass("details");
                     }
                     // don't remove clicked class to prevent resends
                 },
@@ -488,6 +507,7 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
                     if (statusArea) {
                         statusArea.html(statusArea.html() + "<br />Now Blacklisted");
                         statusArea.addClass("now-blacklisted");
+                        item.parents(".event-item").removeClass("details");
                     }
                     // don't remove clicked class to prevent resends
                 },
