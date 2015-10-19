@@ -120,21 +120,21 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
 
 	proxy.OnResponse(goproxy_html.IsHtml).Do(goproxy_html.HandleString(
 		func(s string, ctx *goproxy.ProxyCtx) string {
-			if strings.HasPrefix(ctx.Req.URL.Host, "127.0.0.1") || strings.HasPrefix(ctx.Req.URL.Host, "localhost") {
+			if strings.HasPrefix(ctx.Req.URL.Host, "http://127.0.0.1:") ||
+                    strings.HasPrefix(ctx.Req.URL.Host, "http://127.0.0.1/") {
 				// Don't inject on our own content.
 				// TODO: move this logic next to IsHtml so this func
-				// never called?
 				return s
 			}
-            // Don't inject iframe into responses that aren't successful
-            // ie 2xx response codes.
-            // Mainly this is to avoid injecting on our own block page,
-            // but it probably doesn't make sense for other failed pages either
-            if (ctx.Resp.StatusCode < 200 || ctx.Resp.StatusCode >= 300) {
-                // show page as-is
-                // remember: blocking content is already enforced by this point,
-                return s
-            }
+			// Don't inject iframe into responses that aren't successful
+			// ie 2xx response codes.
+			// Mainly this is to avoid injecting on our own block page,
+			// but it probably doesn't make sense for other failed pages either
+			if ctx.Resp.StatusCode < 200 || ctx.Resp.StatusCode >= 300 {
+				// show page as-is
+				// remember: blocking content is already enforced by this point,
+				return s
+			}
 			match := vars.StartBodyTagMatcher.FindIndex([]byte(s))
 			if match != nil && len(match) >= 2 {
 				// TODO: make this more efficient by using a stream or some sort
@@ -159,11 +159,15 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
 }
 
 func notifyProxyEvent(action string, req *http.Request, events chan longpolling.Event) {
+    // in the event localhost isn't added to noproxy, don't emit localhost event
+    normUrl := strings.ToLower(req.URL.String())
+    if strings.HasPrefix(normUrl, "http://127.0.0.1:") ||
+        strings.HasPrefix(normUrl, "http://127.0.0.1/") {
+        // no events for you!
+        return
+    }
 	var category string
-	// TODO: comments about how longpoll subscriptions for a given referrer (or
-	// url when not a referred page).  This way we can show all content allowed/blocked
-	// for a given page.
-	if referer := req.Header.Get("Referer"); len(referer) > 0 {
+    if referer := req.Header.Get("Referer"); len(referer) > 0 {
 		category = utils.StripProxyExceptionStringFromUrl(referer)
 	} else {
 		category = utils.StripProxyExceptionStringFromUrl(req.URL.String())
