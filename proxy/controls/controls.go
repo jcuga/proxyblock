@@ -38,6 +38,10 @@ func NewControlServer(port string,
 
 func getAddListItemHandler(updateList chan<- string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Don't cache response:
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate") // HTTP 1.1.
+		w.Header().Set("Pragma", "no-cache")                                   // HTTP 1.0.
+		w.Header().Set("Expires", "0")                                         // Proxies.
 		new_url := r.URL.Query().Get("url")
 		if len(new_url) < 1 {
 			w.WriteHeader(http.StatusBadRequest)
@@ -46,7 +50,15 @@ func getAddListItemHandler(updateList chan<- string) func(http.ResponseWriter, *
 		log.Printf("Adding item to white/black list: %s", new_url)
 		// send new url to proxy and it will add it to it's white/black list
 		updateList <- new_url
-		fmt.Fprint(w, "200 ok")
+		// if this was a "Add to whitelist and continue" link click from the
+		// block page, then we'll want to let the user continue to the
+		// original page
+		continue_to := r.URL.Query().Get("continue_to_page")
+		if continue_to == "yes" {
+			http.Redirect(w, r, new_url, 301)
+		} else {
+			fmt.Fprint(w, "200 ok")
+		}
 	}
 }
 

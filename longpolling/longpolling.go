@@ -69,6 +69,10 @@ func getLongPollSubscriptionHandler(subscriptionRequests chan ClientSubscription
 		log.Println("Handling HTTP request at ", r.URL)
 		// We are going to return json no matter what:
 		w.Header().Set("Content-Type", "application/json")
+		// Don't cache response:
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate") // HTTP 1.1.
+		w.Header().Set("Pragma", "no-cache")                                   // HTTP 1.0.
+		w.Header().Set("Expires", "0")                                         // Proxies.
 		if err != nil || timeout > 180 || timeout < 1 {
 			log.Printf("Error: Invalid timeout param.  Must be 1-180. Got: %q.\n",
 				r.URL.Query().Get("timeout"))

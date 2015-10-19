@@ -69,7 +69,7 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
 			return req, nil
 		}
 
-		// See if we're manually allowing this page thru
+		// See if we're manually allowing this page thru on time only
 		if strings.HasSuffix(urlString, vars.ProxyExceptionString) {
 			urlString := urlString[:len(urlString)-len(vars.ProxyExceptionString)]
 			u, uErr := url.Parse(urlString)
@@ -108,9 +108,12 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
                                 <hr />
                                 <h2>Webpage Blocked</h2>
                                 <p style="color: black; font-family: monospace; background: #DDDDDD; padding: 20px;">%s</p>
-                                <p><a href="%s%s">Continue to Webpage</a></p>
+                                <p><a href="%s%s">Continue to Webpage just this once.</a></p>
+                                <p>or...</p>
+                                <p><a href="http://127.0.0.1:%s/add-wl?url=%s&continue_to_page=yes">Add to Whitelist and continue.</a></p>
                             </body>
-                        </html>`, req.URL, req.URL, vars.ProxyExceptionString))
+                        </html>`, req.URL, req.URL, vars.ProxyExceptionString,
+						vars.ProxyControlPort, url.QueryEscape(req.URL.String())))
 			}
 		}
 		log.Printf("NOT MATCHED: (allow by default) %s\n", req.URL)
@@ -121,7 +124,7 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
 	proxy.OnResponse(goproxy_html.IsHtml).Do(goproxy_html.HandleString(
 		func(s string, ctx *goproxy.ProxyCtx) string {
 			if strings.HasPrefix(ctx.Req.URL.Host, "http://127.0.0.1:") ||
-                    strings.HasPrefix(ctx.Req.URL.Host, "http://127.0.0.1/") {
+				strings.HasPrefix(ctx.Req.URL.Host, "http://127.0.0.1/") {
 				// Don't inject on our own content.
 				// TODO: move this logic next to IsHtml so this func
 				return s
@@ -159,15 +162,15 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
 }
 
 func notifyProxyEvent(action string, req *http.Request, events chan longpolling.Event) {
-    // in the event localhost isn't added to noproxy, don't emit localhost event
-    normUrl := strings.ToLower(req.URL.String())
-    if strings.HasPrefix(normUrl, "http://127.0.0.1:") ||
-        strings.HasPrefix(normUrl, "http://127.0.0.1/") {
-        // no events for you!
-        return
-    }
+	// in the event localhost isn't added to noproxy, don't emit localhost event
+	normUrl := strings.ToLower(req.URL.String())
+	if strings.HasPrefix(normUrl, "http://127.0.0.1:") ||
+		strings.HasPrefix(normUrl, "http://127.0.0.1/") {
+		// no events for you!
+		return
+	}
 	var category string
-    if referer := req.Header.Get("Referer"); len(referer) > 0 {
+	if referer := req.Header.Get("Referer"); len(referer) > 0 {
 		category = utils.StripProxyExceptionStringFromUrl(referer)
 	} else {
 		category = utils.StripProxyExceptionStringFromUrl(req.URL.String())
