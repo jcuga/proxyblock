@@ -124,7 +124,9 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
 	proxy.OnResponse(goproxy_html.IsHtml).Do(goproxy_html.HandleString(
 		func(s string, ctx *goproxy.ProxyCtx) string {
 			if strings.HasPrefix(ctx.Req.URL.Host, "http://127.0.0.1:") ||
-				strings.HasPrefix(ctx.Req.URL.Host, "http://127.0.0.1/") {
+				strings.HasPrefix(ctx.Req.URL.Host, "http://127.0.0.1/") ||
+				strings.HasPrefix(ctx.Req.URL.Host, "127.0.0.1/") ||
+				strings.HasPrefix(ctx.Req.URL.Host, "127.0.0.1:") {
 				// Don't inject on our own content.
 				// TODO: move this logic next to IsHtml so this func
 				return s
@@ -165,7 +167,9 @@ func notifyProxyEvent(action string, req *http.Request, events chan longpolling.
 	// in the event localhost isn't added to noproxy, don't emit localhost event
 	normUrl := strings.ToLower(req.URL.String())
 	if strings.HasPrefix(normUrl, "http://127.0.0.1:") ||
-		strings.HasPrefix(normUrl, "http://127.0.0.1/") {
+		strings.HasPrefix(normUrl, "http://127.0.0.1/") ||
+		strings.HasPrefix(normUrl, "127.0.0.1:") ||
+		strings.HasPrefix(normUrl, "127.0.0.1/") {
 		// no events for you!
 		return
 	}
