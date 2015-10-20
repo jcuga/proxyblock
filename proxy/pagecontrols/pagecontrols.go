@@ -212,6 +212,7 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
       <tr>
         <th>Status</th>
         <th>Time</th>
+        <th>Type</th>
         <th id="requests-title">Requests</th>
       </tr>
       <tr id="stuff-happening">
@@ -335,6 +336,7 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
             var t = d.toLocaleTimeString();
             return "<tr class='event-item " + rowClass + "'>" + status +
                 "<td>" + t.slice(0, t.length - 3) + "</td>" +
+                "<td>" + guessContent(url) + "</td>" +
                 "<td class='request-url'><span class='url'>" + url + "</span>" +
                 "<div class=\"details-wrapper\">" +
                 controlLinks +
@@ -372,6 +374,41 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
         }
       }
     };
+
+    var contentPatterns = {
+        css: new RegExp("^.*css[^\./]*$"),
+        jpg: new RegExp("^.*jpg[^\./]*$"),
+        png: new RegExp("^.*png[^\./]*$"),
+        gif: new RegExp("^.*gif[^\./]*$"),
+        js: new RegExp("^.*js[^\./]*$"),
+        html: new RegExp("^.*html[^\./]*$"),
+        html2: new RegExp("^.*/$")
+    };
+
+    function guessContent(url) {
+        if (contentPatterns.css.exec(url)) {
+            return "CSS";
+        }
+        if (contentPatterns.jpg.exec(url)) {
+            return "JPEG";
+        }
+        if (contentPatterns.png.exec(url)) {
+            return "PNG";
+        }
+        if (contentPatterns.gif.exec(url)) {
+            return "GIF";
+        }
+        if (contentPatterns.js.exec(url)) {
+            return "JS";
+        }
+        if (contentPatterns.html.exec(url)) {
+            return "HTML";
+        }
+        if (contentPatterns.html2.exec(url)) {
+            return "HTML";
+        }
+        return "?";
+    }
 
     /* use a function for the exact format desired... */
     function ISODateString(d){
