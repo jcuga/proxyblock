@@ -148,7 +148,8 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
 				return s[:match[1]] +
 					// TODO: should this script get injected after the iframe to prevent a potential race condition?
 					getParentControlScript() +
-					"<div id=\"proxyblock-controls\" style=\"position: fixed; height: 42px; width: 230px !important; top: 4px; right: 8px; z-index: 99999999;\">" +
+					"<div id=\"proxyblock-glass-overlay\" onclick=\"glassClose(this);\" style=\"position: fixed; top: 0; right: 0; left: 0; bottom: 0; background: #000000; opacity: 0.3; z-index: 99999998; display: none;\"></div>" +
+					"<div id=\"proxyblock-controls\" style=\"position: fixed; height: 42px; width: 230px; top: 4px; right: 8px; z-index: 99999999;\">" +
 					"<iframe id=\"proxyblock-frame\" scrolling=\"no\" style=\"overflow: hidden; background-color: #FFFFFF; border: 2px solid black; width: 100%; height: 100%;\" " +
 					"src=\"http://127.0.0.1:" + vars.ProxyControlPort + pagecontrols.GetPageControlsUrl(ctx.Req.URL.String()) +
 					"\"></iframe>" +
@@ -186,6 +187,26 @@ func notifyProxyEvent(action string, req *http.Request, events chan longpolling.
 func getParentControlScript() string {
 	return `
     <script type="text/javascript">
+        function closeControlDetails(wrapper, glass, frame) {
+            wrapper.style.height = "42px";
+            wrapper.style.width = "230px";
+            wrapper.style.maxHeight = null;
+            wrapper.style.maxWidth = null;
+            glass.style.display = "none";
+            frame.setAttribute("scrolling", "no");
+        }
+
+        function glassClose(element) {
+            var wrapper = document.getElementById("proxyblock-controls");
+            var frame = document.getElementById("proxyblock-frame");
+            var glass = document.getElementById("proxyblock-glass-overlay");
+            closeControlDetails(wrapper, glass, frame);
+            // tell child iframe via postMessage to update its dom now that
+            // it's supposed to be in closed-details mode:
+            var iframewindow = frame.contentWindow ? frame.contentWindow : frame.contentDocument.defaultView;
+            iframewindow.postMessage({closeDetails: true}, "*");
+        }
+
         // Here "addEventListener" is for standards-compliant web browsers and "attachEvent" is for IE Browsers.
         var eventMethod = window.addEventListener ? "addEventListener" : "attachEvent";
         var eventer = window[eventMethod];
@@ -198,6 +219,7 @@ func getParentControlScript() string {
             }
             var wrapper = document.getElementById("proxyblock-controls");
             var frame = document.getElementById("proxyblock-frame");
+            var glass = document.getElementById("proxyblock-glass-overlay");
             if (e.data.upTop !== undefined) {
                 // user toggled control position.  reposition:
                 if (e.data.upTop) {
@@ -215,13 +237,10 @@ func getParentControlScript() string {
                     wrapper.style.width = "90%";
                     wrapper.style.maxHeight = "1000px";
                     wrapper.style.maxWidth = "900px";
+                    glass.style.display = "block";
                     frame.setAttribute("scrolling", "auto");
                 } else {
-                    wrapper.style.height = "42px";
-                    wrapper.style.width = "230px";
-                    wrapper.style.maxHeight = null;
-                    wrapper.style.maxWidth = null;
-                    frame.setAttribute("scrolling", "no");
+                    closeControlDetails(wrapper, glass, frame);
                 }
             }
         }, false);

@@ -560,6 +560,29 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
         }
     });
 
+        // Here "addEventListener" is for standards-compliant web browsers and "attachEvent" is for IE Browsers.
+        var eventMethod = window.addEventListener ? "addEventListener" : "attachEvent";
+        var eventer = window[eventMethod];
+        // onmessage for attachEvent, message for addEventListener
+        var messageEvent = eventMethod == "attachEvent" ? "onmessage" : "message";
+        // Listen to message from parent window to know when to close detail view
+        // this event is sent from the parent page to this iframe when the glass
+        // overlay is clicked to dismiss the controlls.  this overlay is not
+        // part of controls and thus we need to use events to do parent-to-iframe comms
+         eventer(messageEvent, function (e) {
+            if (e.data && e.data.closeDetails === true) {
+                if (controlState.expanded) {
+                    // close details
+                    // TODO: put close details in func called by both spots
+                    // instead of this copy n paste?
+                    controlState.expanded = false;
+                    $("#toggle-details").html("+");
+                    $("#open-settings").removeClass("showme");
+                    window.scrollTo(0, 0);
+                }
+            }
+        }, false);
+
     </script>
 </body>
 </html>`,
