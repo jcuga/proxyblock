@@ -1,5 +1,10 @@
 # ProxyBlock
 A proxy that uses a whitelist/blacklist to block unwanted web content like ads, third party javascript, and other cruft.
+The proxy injects an iframe into web content to allow users to fine tune the proxy.
+
+This is a different take on blocking ads/tracking-javascript that does everything
+via a proxy instead of having a browser plugin.  This is an interesting proof of
+concept that I had a lot of fun slapping together.
 
 Many websites may load much faster despite being run through a proxy since all the ads and other javascript/tracking cruft typically gets blocked out.  Many sites may have some missing styles or features, but with enough configuring it can make for a much snappier web experience.
 
@@ -65,3 +70,5 @@ of the many TODOs.
 * wider browser support/testing for UI/behavior.
 * interactive whitelist/blacklist regexp tweaking
 * persisting exceptions between run
+* thread safety, currently there are goroutines all referencing a map,
+    that's easy to fix...
