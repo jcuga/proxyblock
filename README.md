@@ -20,3 +20,17 @@ while URLs that match blacklist patterns will be blocked.  If a URL matches neit
 
 You can also manually allow a page by clicking the continue link on the proxy block response webpage.
 
+## Brief Overview
+![alt tag](https://raw.github.com/jcuga/proxyblock/demo-screenshots/demo-screenshot-0.png)
+![alt tag](https://raw.github.com/jcuga/proxyblock/demo-screenshots/demo-screenshot-1.png)
+![alt tag](https://raw.github.com/jcuga/proxyblock/demo-screenshots/demo-screenshot-2.png)
+![alt tag](https://raw.github.com/jcuga/proxyblock/demo-screenshots/demo-screenshot-3.png)
+![alt tag](https://raw.github.com/jcuga/proxyblock/demo-screenshots/demo-screenshot-4.png)
+![alt tag](https://raw.github.com/jcuga/proxyblock/demo-screenshots/demo-screenshot-5.png)
+
+
+## TODO
+* HTTPS/Man-in-the-Middle proxying to control HTTPS content
+* better injected UI
+* interactive whitelist/blacklist regexp tweaking
+* persisting exceptions between runs
