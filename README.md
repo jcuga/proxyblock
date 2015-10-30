@@ -21,12 +21,12 @@ while URLs that match blacklist patterns will be blocked.  If a URL matches neit
 You can also manually allow a page by clicking the continue link on the proxy block response webpage.
 
 ## Brief Overview
-![alt tag](https://raw.github.com/jcuga/proxyblock/demo-screenshots/demo-screenshot-0.png)
-![alt tag](https://raw.github.com/jcuga/proxyblock/demo-screenshots/demo-screenshot-1.png)
-![alt tag](https://raw.github.com/jcuga/proxyblock/demo-screenshots/demo-screenshot-2.png)
-![alt tag](https://raw.github.com/jcuga/proxyblock/demo-screenshots/demo-screenshot-3.png)
-![alt tag](https://raw.github.com/jcuga/proxyblock/demo-screenshots/demo-screenshot-4.png)
-![alt tag](https://raw.github.com/jcuga/proxyblock/demo-screenshots/demo-screenshot-5.png)
+![screenshot 0](https://raw.githubusercontent.com/jcuga/proxyblock/master/demo-screenshots/demo-screenshot-0.png)
+![screenshot 1](https://raw.githubusercontent.com/jcuga/proxyblock/master/demo-screenshots/demo-screenshot-1.png)
+![screenshot 2](https://raw.githubusercontent.com/jcuga/proxyblock/master/demo-screenshots/demo-screenshot-2.png)
+![screenshot 3](https://raw.githubusercontent.com/jcuga/proxyblock/master/demo-screenshots/demo-screenshot-3.png)
+![screenshot 4](https://raw.githubusercontent.com/jcuga/proxyblock/master/demo-screenshots/demo-screenshot-4.png)
+![screenshot 5](https://raw.githubusercontent.com/jcuga/proxyblock/master/demo-screenshots/demo-screenshot-5.png)
 
 
 ## TODO
