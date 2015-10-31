@@ -17,7 +17,9 @@ the UI given a makeover, and I add interactive whitelist/blacklist pattern
 editing from the controls, then I think this could be a pretty handy tool.
 
 ## Running
-If you have a go workspace set up, simply build and run out of the box:
+Check out the latest release at:  https://github.com/jcuga/proxyblock/releases
+
+Or, if you have a go workspace set up, simply build and run out of the box:
 ```
 go get ./...
 go build proxyblock.go
