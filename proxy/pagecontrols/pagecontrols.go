@@ -273,32 +273,49 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
             optionalSince = "&since_time=" + sinceTime;
         }
         var pollUrl = "http://127.0.0.1:%s/events?timeout=" + timeout + "&category=" + category + optionalSince;
+        // how long to wait before starting next longpoll request in each case:
+        var successDelay = 10;  // 10 ms
+        var errorDelay = 3000;  // 3 sec
         $.ajax({ url: pollUrl,
             success: function(data) {
                 var receivedTime = (new Date()).toISOString();
                 if (data && data.events && data.events.length > 0) {
+                    // got events, process them
                     for (var i = data.events.length - 1; i >= 0 ; i--) {
                         tally(data.events[i]);
                         $("#stuff-happening").before(getFormattedEvent(data.events[i], receivedTime));
                         sinceTime = data.events[i].timestamp;
                     }
+                    // success!  start next longpoll
+                    setTimeout(poll, successDelay);
+                    return;
                 }
                 if (data && data.events && data.events.length == 0) {
                     console.log("Empty events, that's weird!")
+                    // should get a timeout response, not an empty event array
+                    // if no events during longpoll window.  so this is weird
+                    setTimeout(poll, errorDelay);
+                    return;
                 }
                 if (data && data.timeout) {
                     console.log("No events, checking again.");
+                    // no events within timeout window, start another longpoll:
+                    setTimeout(poll, successDelay);
+                    return;
                 }
                 if (data && data.error) {
                     console.log("Error response: " + data.error);
                     console.log("Trying again shortly...")
-                    sleep(1000);
+                    setTimeout(poll, errorDelay);
+                    return;
                 }
+                console.log("Didn't get expected event data, try again shortly...");
+                setTimeout(poll, errorDelay);
             }, dataType: "json",
         error: function (data) {
             console.log("Error in ajax request--trying again shortly...");
-        },
-        complete: poll
+            setTimeout(poll, 3000);  // 3s
+        }
         });
     })();
 
@@ -364,15 +381,6 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
             // else unknown event :(
             return;
         }
-    };
-
-    function sleep(milliseconds) {
-      var start = new Date().getTime();
-      for (var i = 0; i < 1e7; i++) {
-        if ((new Date().getTime() - start) > milliseconds){
-          break;
-        }
-      }
     };
 
     var contentPatterns = {
