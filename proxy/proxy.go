@@ -180,7 +180,7 @@ func notifyProxyEvent(action string, req *http.Request, events chan longpolling.
 	} else {
 		category = utils.StripProxyExceptionStringFromUrl(req.URL.String())
 	}
-	event := longpolling.Event{time.Now(), category, action + ": " + req.URL.String()}
+	event := longpolling.Event{utils.TimeToEpochMilliseconds(time.Now()), category, action + ": " + req.URL.String()}
 	events <- event
 }
 

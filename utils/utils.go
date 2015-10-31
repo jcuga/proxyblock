@@ -7,7 +7,9 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jcuga/proxyblock/proxy/vars"
 )
@@ -49,4 +51,20 @@ func StripProxyExceptionStringFromUrl(url string) string {
 	} else {
 		return url
 	}
+}
+
+// adapted from:
+// http://stackoverflow.com/questions/13294649/how-to-parse-a-milliseconds-since-epoch-timestamp-string-in-go
+func MillisecondStringToTime(ms string) (time.Time, error) {
+	msInt, err := strconv.ParseInt(ms, 10, 64)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return time.Unix(0, msInt*int64(time.Millisecond)), nil
+}
+
+// adapted from:
+// http://stackoverflow.com/questions/24122821/go-golang-time-now-unixnano-convert-to-milliseconds
+func TimeToEpochMilliseconds(t time.Time) int64 {
+	return t.UnixNano() / int64(time.Millisecond)
 }

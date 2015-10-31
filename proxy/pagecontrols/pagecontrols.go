@@ -221,9 +221,11 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
     </div>
     <script type="text/javascript">
 
-    // Start checking events from a few seconds ago in case our iframe didn't
-    // load right away due to other js on parent page being slow
-    var sinceTime = ISODateString( new Date(Date.now() - 10000) );
+    // Start checking events from a few (10) seconds ago in case our iframe
+    // didn't load right away due to other js on parent page being slow.
+    // Note: using time as milliseconds since epoch instead of some string
+    // timestamp like earlier which caused internationalization issues
+    var sinceTime = (new Date(Date.now() - 10000)).getTime();
 
     var stats = {
         blocked: 0,
@@ -267,7 +269,7 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
         }
         $('#info').text(category);
         $('#info').attr('alt', category);
-        var timeout = 15;
+        var timeout = 15;  // in seconds
         var optionalSince = "";
         if (sinceTime) {
             optionalSince = "&since_time=" + sinceTime;
@@ -278,12 +280,11 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
         var errorDelay = 3000;  // 3 sec
         $.ajax({ url: pollUrl,
             success: function(data) {
-                var receivedTime = (new Date()).toISOString();
                 if (data && data.events && data.events.length > 0) {
                     // got events, process them
                     for (var i = data.events.length - 1; i >= 0 ; i--) {
                         tally(data.events[i]);
-                        $("#stuff-happening").before(getFormattedEvent(data.events[i], receivedTime));
+                        $("#stuff-happening").before(getFormattedEvent(data.events[i]));
                         sinceTime = data.events[i].timestamp;
                     }
                     // success!  start next longpoll

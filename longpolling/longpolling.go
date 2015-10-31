@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/nu7hatch/gouuid"
+
+	"github.com/jcuga/proxyblock/utils"
 )
 
 func StartLongpollManager() (chan Event, func(w http.ResponseWriter, r *http.Request)) {
@@ -93,15 +95,16 @@ func getLongPollSubscriptionHandler(subscriptionRequests chan ClientSubscription
 		}
 		// Default to only looking for current events
 		lastEventTime := time.Now()
+		// since_time is string of milliseconds since epoch
 		lastEventTimeParam := r.URL.Query().Get("since_time")
 		if len(lastEventTimeParam) > 0 {
 			// Client is requesting any event from given timestamp
 			// parse time
 			var parseError error
-			lastEventTime, parseError = time.Parse(time.RFC3339, lastEventTimeParam)
+			lastEventTime, parseError = utils.MillisecondStringToTime(lastEventTimeParam)
 			if parseError != nil {
 				log.Printf(fmt.Sprintf(
-					"Error parsing last_event_time arg. Error: %s.\n", err))
+					"Error parsing last_event_time arg. Parm Value: %s, Error: %s.\n", lastEventTimeParam, err))
 				io.WriteString(w, "{\"error\": \"Invalid last_event_time arg.\"}")
 				return
 			}
@@ -132,9 +135,9 @@ type EventResponse struct {
 }
 
 type Event struct {
-	Timestamp time.Time `json:"timestamp"`
-	Category  string    `json:"category"`
-	Data      string    `json:"data"` // TODO: eventually make byte[] instead?
+	Timestamp int64  `json:"timestamp"` // milliseconds since epoch to match javascrits Date.getTime()
+	Category  string `json:"category"`
+	Data      string `json:"data"` // TODO: eventually make byte[] instead?
 }
 
 type ClientSubPair struct {
@@ -278,7 +281,8 @@ func (eb *EventBuffer) GetEventsSince(since time.Time) ([]Event, error) {
 		if !ok {
 			return nil, fmt.Errorf("Found non-event type in event buffer.")
 		}
-		if event.Timestamp.After(since) {
+		// event time is after since time arg? convert since to epoch ms
+		if event.Timestamp > utils.TimeToEpochMilliseconds(since) {
 			events = append(events, Event{event.Timestamp, event.Category, event.Data})
 		} else {
 			// we've made it to events we've seen before, stop searching
@@ -288,6 +292,6 @@ func (eb *EventBuffer) GetEventsSince(since time.Time) ([]Event, error) {
 	// NOTE: events has the most recent event first followed by any older events
 	// that occurred since client's last seen event
 	// TODO: consider reversing order?  or is it an advantage to have
-	// newest first so handled with more priority?
+	// newest first so handled with more priority?  TODO: make this an option?
 	return events, nil
 }
