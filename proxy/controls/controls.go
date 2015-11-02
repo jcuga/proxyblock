@@ -20,9 +20,7 @@ func (s *HTTPServer) Serve() {
 	go s.https.ListenAndServe()
 }
 
-func NewControlServer(port string,
-	eventAjaxHandler func(w http.ResponseWriter, r *http.Request),
-	whiteListUpdates, blackListUpdates chan<- string) *HTTPServer {
+func NewControlServer(port string, eventAjaxHandler func(w http.ResponseWriter, r *http.Request), whiteListUpdates, blackListUpdates chan<- string) *HTTPServer {
 	s := &HTTPServer{port, &http.Server{Addr: "127.0.0.1:" + port, Handler: nil}}
 	mux := http.NewServeMux()
 	mux.HandleFunc(pagecontrols.ProxyPageControlsUrl, pagecontrols.PageControlsHandler)
@@ -30,8 +28,8 @@ func NewControlServer(port string,
 	mux.HandleFunc("/proxy-settings", settings.ProxySettingsHandler)
 	mux.HandleFunc("/add-wl", getAddListItemHandler(whiteListUpdates))
 	mux.HandleFunc("/add-bl", getAddListItemHandler(blackListUpdates))
-	// TODO: remove-wl
-	// TODO: remove-bl
+	// TODO: remove-wl url
+	// TODO: remove-bl url
 	s.https.Handler = mux
 	return s
 }

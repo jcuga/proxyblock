@@ -1,9 +1,6 @@
 package proxy
 
 import (
-	"github.com/elazarl/goproxy"
-	"github.com/elazarl/goproxy/ext/html"
-
 	"fmt"
 	"log"
 	"net/http"
@@ -12,7 +9,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jcuga/proxyblock/longpolling"
+	// TODO: peg version of libraries if versions tagged
+	"github.com/elazarl/goproxy"
+	"github.com/elazarl/goproxy/ext/html"
+
+	// TODO: peg version of libraries if versions tagged
+	"github.com/jcuga/golongpoll"
+
 	"github.com/jcuga/proxyblock/proxy/controls"
 	"github.com/jcuga/proxyblock/proxy/pagecontrols"
 	"github.com/jcuga/proxyblock/proxy/vars"
@@ -22,7 +25,7 @@ import (
 func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
 	whiteListUpdates, blackListUpdates chan string) (*goproxy.ProxyHttpServer, error) {
 	// Start longpoll subscription manager
-	eventChan, eventAjaxHandler := longpolling.StartLongpollManager()
+	eventChan, eventAjaxHandler := longpoll.StartLongpollManager()
 	// Create and start control server for controlling proxy behavior
 	ctlServer := controls.NewControlServer(vars.ProxyControlPort, eventAjaxHandler, whiteListUpdates, blackListUpdates)
 	ctlServer.Serve()
@@ -164,7 +167,7 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
 	return proxy, nil
 }
 
-func notifyProxyEvent(action string, req *http.Request, events chan longpolling.Event) {
+func notifyProxyEvent(action string, req *http.Request, events longpoll.EventChannel) {
 	// in the event localhost isn't added to noproxy, don't emit localhost event
 	normUrl := strings.ToLower(req.URL.String())
 	if strings.HasPrefix(normUrl, "http://127.0.0.1:") ||
@@ -180,8 +183,12 @@ func notifyProxyEvent(action string, req *http.Request, events chan longpolling.
 	} else {
 		category = utils.StripProxyExceptionStringFromUrl(req.URL.String())
 	}
-	event := longpolling.Event{utils.TimeToEpochMilliseconds(time.Now()), category, action + ": " + req.URL.String()}
-	events <- event
+	eventData := action + ": " + req.URL.String()
+	if event, eErr := longpoll.NewEvent(time.Now(), category, eventData); eErr == nil {
+		events <- event
+	} else {
+		log.Printf("ERROR: failed to create event.  error: %q", eErr)
+	}
 }
 
 func getParentControlScript() string {

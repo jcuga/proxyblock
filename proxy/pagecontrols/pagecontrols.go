@@ -282,7 +282,7 @@ func PageControlsHandler(w http.ResponseWriter, r *http.Request) {
             success: function(data) {
                 if (data && data.events && data.events.length > 0) {
                     // got events, process them
-                    for (var i = data.events.length - 1; i >= 0 ; i--) {
+                    for (var i = 0; i < data.events.length; i++) {
                         tally(data.events[i]);
                         $("#stuff-happening").before(getFormattedEvent(data.events[i]));
                         sinceTime = data.events[i].timestamp;
