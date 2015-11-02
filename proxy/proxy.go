@@ -107,7 +107,7 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
 					fmt.Sprintf(`<html>
                             <head><title>BLOCKED</title></head>
                             <body>
-                                <h1>I pitty the fool!</h1>
+                                <h1>I pity the fool!</h1>
                                 <hr />
                                 <h2>Webpage Blocked</h2>
                                 <p style="color: black; font-family: monospace; background: #DDDDDD; padding: 20px;">%s</p>
