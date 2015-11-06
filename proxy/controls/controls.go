@@ -13,7 +13,7 @@ import (
 
 type HTTPServer struct {
 	port  string
-	https *http.Server
+	https *http.Server // TODO: rename this from 'https' to something like 'server', this is unacceptably bad naming!
 }
 
 func (s *HTTPServer) Serve() {

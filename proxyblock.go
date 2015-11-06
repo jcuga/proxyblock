@@ -38,6 +38,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error creating proxy: %s", err)
 	} else {
+		log.Printf("Starting proxy on: %s", *addr)
 		// Start proxy (this call is blocking)
 		log.Fatal(http.ListenAndServe(*addr, proxy))
 	}
