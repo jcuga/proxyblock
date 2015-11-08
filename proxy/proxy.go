@@ -22,12 +22,12 @@ import (
 func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
 	whiteListUpdates, blackListUpdates chan string) (*goproxy.ProxyHttpServer, error) {
 	// Start longpoll subscription manager
-	longpollInterface, lpErr := golongpoll.CreateCustomManager(100, 1000, true)
+	longpollManager, lpErr := golongpoll.CreateCustomManager(180, 1000, true)
 	if lpErr != nil {
 		log.Fatalf("Error creating longpoll manager: %v", lpErr)
 	}
 	// Create and start control server for controlling proxy behavior
-	ctlServer := controls.NewControlServer(vars.ProxyControlPort, longpollInterface.SubscriptionHandler, whiteListUpdates, blackListUpdates)
+	ctlServer := controls.NewControlServer(vars.ProxyControlPort, longpollManager.SubscriptionHandler, whiteListUpdates, blackListUpdates)
 	ctlServer.Serve()
 
 	// Manually allowed/blocked sites:
@@ -59,7 +59,7 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
 					break
 				} else {
 					log.Printf("WHITELISTED:  %s\n", req.URL)
-					notifyProxyEvent("Allowed", req, longpollInterface)
+					notifyProxyEvent("Allowed", req, longpollManager)
 					return req, nil
 				}
 			}
@@ -68,7 +68,7 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
 		if _, ok := manualWhiteList[strings.TrimSpace(urlString)]; ok {
 			// no need to consider blacklists, serve content
 			log.Printf("user-eplicit WHITELISTED:  %s\n", req.URL)
-			notifyProxyEvent("Allowed", req, longpollInterface)
+			notifyProxyEvent("Allowed", req, longpollManager)
 			return req, nil
 		}
 
@@ -79,7 +79,7 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
 			if uErr == nil {
 				req.URL = u
 				log.Printf("MANUALLY ALLOWED: %s\n", req.URL)
-				notifyProxyEvent("Manually Allowed", req, longpollInterface)
+				notifyProxyEvent("Manually Allowed", req, longpollManager)
 				return req, nil
 			} else {
 				log.Printf("ERROR trying to rewrite URL. Url: %s, Error: %s", urlString, uErr)
@@ -101,7 +101,7 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
 		for _, b := range blackList {
 			if b.MatchString(urlString) {
 				log.Printf("BLACKLISTED:  %s\n", req.URL)
-				notifyProxyEvent("Blocked", req, longpollInterface)
+				notifyProxyEvent("Blocked", req, longpollManager)
 				return req, goproxy.NewResponse(req,
 					goproxy.ContentTypeHtml, http.StatusForbidden,
 					fmt.Sprintf(`<html>
@@ -120,7 +120,7 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
 			}
 		}
 		log.Printf("NOT MATCHED: (allow by default) %s\n", req.URL)
-		notifyProxyEvent("Not matched, default allowed", req, longpollInterface)
+		notifyProxyEvent("Not matched, default allowed", req, longpollManager)
 		return req, nil
 	})
 
@@ -167,7 +167,7 @@ func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
 	return proxy, nil
 }
 
-func notifyProxyEvent(action string, req *http.Request, lpInterface *golongpoll.LongpollInterface) {
+func notifyProxyEvent(action string, req *http.Request, lpManager *golongpoll.LongpollManager) {
 	// in the event localhost isn't added to noproxy, don't emit localhost event
 	normUrl := strings.ToLower(req.URL.String())
 	if strings.HasPrefix(normUrl, "http://127.0.0.1:") ||
@@ -184,7 +184,7 @@ func notifyProxyEvent(action string, req *http.Request, lpInterface *golongpoll.
 		category = utils.StripProxyExceptionStringFromUrl(req.URL.String())
 	}
 	eventData := action + ": " + req.URL.String()
-	if err := lpInterface.Publish(category, eventData); err != nil {
+	if err := lpManager.Publish(category, eventData); err != nil {
 		log.Printf("ERROR: failed to publish event.  error: %q", err)
 	}
 }
