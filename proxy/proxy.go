@@ -22,7 +22,14 @@ import (
 func CreateProxy(whiteList, blackList []*regexp.Regexp, verbose bool,
 	whiteListUpdates, blackListUpdates chan string) (*goproxy.ProxyHttpServer, error) {
 	// Start longpoll subscription manager
-	longpollManager, lpErr := golongpoll.CreateCustomManager(180, 1000, true)
+	longpollManager, lpErr := golongpoll.StartLongpoll(
+		golongpoll.Options{
+			LoggingEnabled:                 false,
+			MaxLongpollTimeoutSeconds:      120,
+			MaxEventBufferSize:             1000,
+			EventTimeToLiveSeconds:         240,
+			DeleteEventAfterFirstRetrieval: false,
+		})
 	if lpErr != nil {
 		log.Fatalf("Error creating longpoll manager: %v", lpErr)
 	}
